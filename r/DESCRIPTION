@@ -1,0 +1,18 @@
+Package: BIKEgait
+Type: Package
+Title: Gait Event Detection Through Native Python Bridge
+Version: 0.1.0
+Authors@R: person("Frederic", "Fer", email = "f.fer@institut-myologie.org", role = c("aut", "cre"))
+Description: Cross-language wrapper for BIKEgait native-accelerated gait event detection.
+ The package calls the Python module 'BIKEgait' through 'reticulate'
+ and exposes method selection and event detection from structured frames.
+License: Apache License (>= 2)
+Encoding: UTF-8
+LazyData: true
+Imports:
+ jsonlite,
+ reticulate
+Suggests:
+ testthat (>= 3.0.0)
+Config/testthat/edition: 3
+RoxygenNote: 7.3.2

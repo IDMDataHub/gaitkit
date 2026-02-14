@@ -1,0 +1,7 @@
+export(gait_detect)
+export(gait_install_python)
+export(gait_methods)
+importFrom(jsonlite,toJSON)
+importFrom(reticulate,import)
+importFrom(reticulate,py_module_available)
+importFrom(reticulate,py_to_r)

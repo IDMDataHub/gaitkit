@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.so
+*.o
+*.egg-info/
+*.egg
+build/
+dist/
+.eggs/
+*.whl
+sdist/
+.venv/
+venv/
+env/
+*.ipynb_checkpoints/
+
+# R
+*.Rcheck/
+*.Rhistory
+*.RData
+*.Rproj.user/
+
+# MATLAB
+*.asv
+*.mex*
+*.mlappinstall
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Images (keep PDFs for documentation)
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.tiff
+
+# Compiled objects
+*.obj
+*.lib
+*.dll
+*.dylib
+
+# Coverage / test artifacts
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/

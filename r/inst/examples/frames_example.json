@@ -1,0 +1,17 @@
+[
+  {
+    "frame_index": 0,
+    "left_hip_angle": 5.0,
+    "right_hip_angle": 5.0,
+    "left_knee_angle": 10.0,
+    "right_knee_angle": 10.0,
+    "left_ankle_angle": 0.0,
+    "right_ankle_angle": 0.0,
+    "trunk_angle": 0.0,
+    "pelvis_tilt": 0.0,
+    "landmark_positions": {
+      "left_ankle": [0.0, 0.0, 0.0],
+      "right_ankle": [0.0, 0.0, 0.0]
+    }
+  }
+]

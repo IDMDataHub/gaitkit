@@ -1,0 +1,12 @@
+# C source and headers
+include src/gaitkit/native/*.c
+include src/gaitkit/native/*.h
+
+# Data files (model weights, config)
+include src/gaitkit/data/*.json
+include src/gaitkit/data/*.onnx
+
+# Top-level docs
+include LICENSE
+include README.md
+include pyproject.toml
