@@ -1,18 +1,28 @@
-Package: BIKEgait
+Package: gaitkit
 Type: Package
-Title: Gait Event Detection Through Native Python Bridge
+Title: Universal Gait Event Detection Toolkit
 Version: 0.1.0
-Authors@R: person("Frederic", "Fer", email = "f.fer@institut-myologie.org", role = c("aut", "cre"))
-Description: Cross-language wrapper for BIKEgait native-accelerated gait event detection.
- The package calls the Python module 'BIKEgait' through 'reticulate'
- and exposes method selection and event detection from structured frames.
-License: Apache License (>= 2)
+Authors@R: person("Frederic", "Fer",
+    email = "frederic.fer@univ-poitiers.fr",
+    role = c("aut", "cre"),
+    comment = c(ORCID = "0000-0000-0000-0000"))
+Description: Detect heel-strike and toe-off events from motion capture data
+    using 10 validated methods (BIKE, Zeni, OConnor, Hreljac, Mickelborough,
+    Ghoussayni, Vancanneyt, DGEI, IntellEvent, DeepEvent). Includes ensemble
+    voting, gait cycle extraction, and publication-ready visualisation.
+    C-accelerated Python backend accessed through 'reticulate'.
+License: MIT + file LICENSE
+URL: https://github.com/fferlab/gaitkit
+BugReports: https://github.com/fferlab/gaitkit/issues
 Encoding: UTF-8
 LazyData: true
 Imports:
- jsonlite,
- reticulate
+    jsonlite,
+    reticulate (>= 1.28)
 Suggests:
- testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown
 Config/testthat/edition: 3
+VignetteBuilder: knitr
 RoxygenNote: 7.3.2

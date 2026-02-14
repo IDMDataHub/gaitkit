@@ -1,2 +1,2 @@
-"""Test suite for BIKEgait recode layer."""
+"""Test suite for gaitkit recode layer."""
 

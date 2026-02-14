@@ -1,6 +1,6 @@
 function result = detect(method, frames, fps, units)
-%DETECT Detect gait events using the Python BIKEgait backend.
-%   result = BIKEgait.detect(method, frames, fps, units)
+%DETECT Detect gait events using the Python gaitkit backend.
+%   result = gaitkit.detect(method, frames, fps, units)
 %
 % Inputs
 %   method : char/string detector name (e.g. 'bayesian_bis')
@@ -25,7 +25,7 @@ end
 jsonMod = py.importlib.import_module('json');
 pyFrames = jsonMod.loads(jsonencode(frames));
 pyUnits = jsonMod.loads(jsonencode(units));
-pyResult = py.BIKEgait.detect_events_structured(char(method), pyFrames, double(fps), pyUnits);
+pyResult = py.gaitkit.detect_events_structured(char(method), pyFrames, double(fps), pyUnits);
 
 resultJson = char(jsonMod.dumps(pyResult));
 result = jsondecode(resultJson);

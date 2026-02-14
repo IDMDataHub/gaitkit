@@ -1,5 +1,5 @@
 """
-Command line bridge for structured BIKEgait inputs.
+Command line bridge for structured gaitkit inputs.
 
 Input JSON format:
 {
@@ -17,7 +17,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict, Sequence
 
-import BIKEgait
+import gaitkit
 
 
 def _load_payload(input_path: Path) -> Dict[str, Any]:
@@ -46,7 +46,7 @@ def _parse_formats(value: str) -> Sequence[str]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Run BIKEgait on structured JSON frames.")
+    parser = argparse.ArgumentParser(description="Run gaitkit on structured JSON frames.")
     parser.add_argument("--input", required=True, type=Path, help="Input JSON file path.")
     parser.add_argument(
         "--output",
@@ -82,15 +82,15 @@ def main() -> int:
     formats = _parse_formats(args.formats)
 
     if formats == ["json"]:
-        result = BIKEgait.detect_events_structured(method, frames, fps, units=units)
+        result = gaitkit.detect_events_structured(method, frames, fps, units=units)
         _write_json(args.output, result)
         return 0
 
     if args.output is None:
         raise ValueError("--output is required for multi-format export")
 
-    result = BIKEgait.detect_events_structured(method, frames, fps, units=units)
-    paths = BIKEgait.export_detection(result, output_prefix=args.output, formats=formats)
+    result = gaitkit.detect_events_structured(method, frames, fps, units=units)
+    paths = gaitkit.export_detection(result, output_prefix=args.output, formats=formats)
     _write_json(None, {"written": paths})
     return 0
 

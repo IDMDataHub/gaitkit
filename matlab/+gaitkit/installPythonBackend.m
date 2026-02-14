@@ -1,9 +1,9 @@
 function installPythonBackend(packageName)
-%INSTALLPYTHONBACKEND Install BIKEgait into current Python environment.
-%   BIKEgait.installPythonBackend() installs package 'BIKEgait'.
+%INSTALLPYTHONBACKEND Install gaitkit into current Python environment.
+%   gaitkit.installPythonBackend() installs package 'gaitkit'.
 
 if nargin < 1 || isempty(packageName)
-    packageName = 'BIKEgait';
+    packageName = 'gaitkit';
 end
 
 if ~(ischar(packageName) || isstring(packageName))

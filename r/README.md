@@ -1,6 +1,6 @@
-# BIKEgait (CRAN package skeleton)
+# gaitkit (CRAN package skeleton)
 
-This package exposes the `BIKEgait` Python backend in R via `reticulate`.
+This package exposes the `gaitkit` Python backend in R via `reticulate`.
 
 ## Install (local during development)
 
@@ -9,13 +9,13 @@ This package exposes the `BIKEgait` Python backend in R via `reticulate`.
 install.packages(c("reticulate", "jsonlite"))
 # install python package first (wheel or editable)
 # then:
-devtools::install_local("recode/cran/BIKEgait")
+devtools::install_local("recode/cran/gaitkit")
 ```
 
 ## Usage
 
 ```r
-library(BIKEgait)
+library(gaitkit)
 methods <- gait_methods()
 res <- gait_detect(
   "bayesian_bis",
@@ -26,4 +26,4 @@ res <- gait_detect(
 ```
 
 `frames` is a list of named lists compatible with
-`BIKEgait.detect_events_structured`.
+`gaitkit.detect_events_structured`.

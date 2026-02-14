@@ -17,5 +17,5 @@ for i = 1:numel(frames)
     frames(i).frame_index = i - 1;
 end
 
-methods = BIKEgait.listMethods()
-result = BIKEgait.detect('bayesian_bis', frames, 100, struct('position','mm','angles','deg'))
+methods = gaitkit.listMethods()
+result = gaitkit.detect('bayesian_bis', frames, 100, struct('position','mm','angles','deg'))

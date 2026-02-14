@@ -7,7 +7,7 @@ C-accelerated backends, accessible from Python, R, and MATLAB.
 
 <!--
 [![PyPI](https://img.shields.io/pypi/v/gaitkit)](https://pypi.org/project/gaitkit/)
-[![CRAN](https://img.shields.io/cran/v/BIKEgait)](https://cran.r-project.org/package=BIKEgait)
+[![CRAN](https://img.shields.io/cran/v/gaitkit)](https://cran.r-project.org/package=gaitkit)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 -->
 
@@ -33,7 +33,7 @@ remotes::install_github("fferlab/gaitkit", subdir = "r")
 
 ```matlab
 addpath("path/to/gaitkit/matlab")
-BIKEgait.installPythonBackend()   % one-time setup
+gaitkit.installPythonBackend()   % one-time setup
 ```
 
 ---
@@ -58,7 +58,7 @@ print(events.toe_offs_right)
 ### R
 
 ```r
-library(BIKEgait)
+library(gaitkit)
 
 events <- gait_detect("walk_01.c3d", method = "bike")
 events$heel_strikes_left

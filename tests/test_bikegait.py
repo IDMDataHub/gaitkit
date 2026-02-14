@@ -12,7 +12,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(SRC_ROOT))
 
-import BIKEgait
+import gaitkit
 from src.extractors import FukuchiExtractor, NatureC3DExtractor
 
 
@@ -41,9 +41,9 @@ def _load_one_real_extraction():
     return None, None
 
 
-class TestBIKEgaitUnit(unittest.TestCase):
+class TestgaitkitUnit(unittest.TestCase):
     def test_list_methods_contract(self):
-        methods = BIKEgait.list_methods()
+        methods = gaitkit.list_methods()
         self.assertIsInstance(methods, list)
         self.assertNotIn("intellevent", methods)
         for required in [
@@ -60,7 +60,7 @@ class TestBIKEgaitUnit(unittest.TestCase):
 
     def test_invalid_fps_raises(self):
         with self.assertRaises(ValueError):
-            BIKEgait.detect_events_structured("bayesian_bis", [], fps=0.0)
+            gaitkit.detect_events_structured("bayesian_bis", [], fps=0.0)
 
     def test_units_scaling_m_and_rad(self):
         frames = [
@@ -70,7 +70,7 @@ class TestBIKEgaitUnit(unittest.TestCase):
                 "landmark_positions": {"left_ankle": (1.0, 0.0, 0.0)},
             }
         ]
-        out = BIKEgait.build_angle_frames(
+        out = gaitkit.build_angle_frames(
             frames,
             units={"position": "m", "angles": "rad"},
         )
@@ -80,7 +80,7 @@ class TestBIKEgaitUnit(unittest.TestCase):
         self.assertAlmostEqual(f.landmark_positions["left_ankle"][0], 1000.0, places=6)
 
 
-class TestBIKEgaitIntegration(unittest.TestCase):
+class TestgaitkitIntegration(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.dataset_name, cls.extraction = _load_one_real_extraction()
@@ -95,9 +95,9 @@ class TestBIKEgaitIntegration(unittest.TestCase):
         fps = float(self.extraction.fps)
         n = len(frames)
         executed = 0
-        for method in BIKEgait.list_methods():
+        for method in gaitkit.list_methods():
             try:
-                payload = BIKEgait.detect_events_structured(method, frames, fps)
+                payload = gaitkit.detect_events_structured(method, frames, fps)
             except Exception as exc:
                 msg = str(exc).lower()
                 if "no module named" in msg or "keras" in msg or "onnxruntime" in msg:
@@ -117,14 +117,14 @@ class TestBIKEgaitIntegration(unittest.TestCase):
 
     def test_output_json_and_csv_on_real_file(self):
         self._require_real_extraction()
-        payload = BIKEgait.detect_events_structured(
+        payload = gaitkit.detect_events_structured(
             "bayesian_bis",
             self.extraction.angle_frames,
             float(self.extraction.fps),
         )
         with tempfile.TemporaryDirectory(prefix="bikegait_test_") as tmp:
             prefix = Path(tmp) / "trial01"
-            paths = BIKEgait.export_detection(payload, prefix, formats=("json", "csv"))
+            paths = gaitkit.export_detection(payload, prefix, formats=("json", "csv"))
             self.assertIn("json", paths)
             self.assertIn("csv_events", paths)
             self.assertIn("csv_cycles", paths)
@@ -137,7 +137,7 @@ class TestBIKEgaitIntegration(unittest.TestCase):
 
     def test_output_xlsx_dependency_behavior(self):
         self._require_real_extraction()
-        payload = BIKEgait.detect_events_structured(
+        payload = gaitkit.detect_events_structured(
             "bayesian_bis",
             self.extraction.angle_frames,
             float(self.extraction.fps),
@@ -145,7 +145,7 @@ class TestBIKEgaitIntegration(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="bikegait_test_") as tmp:
             prefix = Path(tmp) / "trial01"
             try:
-                paths = BIKEgait.export_detection(payload, prefix, formats=("xlsx",))
+                paths = gaitkit.export_detection(payload, prefix, formats=("xlsx",))
                 self.assertTrue(Path(paths["xlsx"]).exists())
             except RuntimeError as exc:
                 self.assertIn("openpyxl", str(exc).lower())
