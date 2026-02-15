@@ -32,7 +32,7 @@ onnx = ["onnxruntime>=1.14"]
 deep = ["tensorflow>=2.12", "h5py"]
 viz = ["matplotlib>=3.7"]
 c3d = ["ezc3d>=1.5"]
-all = ["gaitkit[onnx,viz,c3d]"]
+all = ["gaitkit[onnx,deep,viz,c3d]"]
 
 [project.scripts]
 gaitkit-detect = "gaitkit.cli:main"
@@ -50,4 +50,4 @@ where = ["src"]
 gaitkit = ["native/*.c", "native/*.h", "data/*.json", "data/*.onnx", "data/*.h5"]
 
 [tool.pytest.ini_options]
-testpaths = ["../../tests"]
+testpaths = ["../tests"]

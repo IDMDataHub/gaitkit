@@ -19,6 +19,7 @@ ext_modules = [
         name="gaitkit.native._gait_native",
         sources=["src/gaitkit/native/_gait_native.c"],
         extra_compile_args=_extra_compile_args,
+        optional=True,
     )
 ]
 
