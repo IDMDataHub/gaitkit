@@ -5,7 +5,9 @@
 gk_detect_ensemble(data, methods = NULL, min_votes = 2L, tolerance_ms = 50, fps = NULL)
 }
 \arguments{
-  \item{data}{Input data, same contract as \code{gk_detect()}.}
+  \item{data}{Input data, same contract as \code{gk_detect()}:
+  a non-empty path string or a list containing at least
+  \code{angle_frames} or \code{fps}.}
 
   \item{methods}{Optional character vector of methods to include in the vote.
   When provided, must contain at least two methods.}
