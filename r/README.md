@@ -35,6 +35,14 @@ RETICULATE_PYTHON=/tmp/gaitkit-r-venv/bin/python \
 Rscript -e "testthat::test_dir('r/tests/testthat', reporter='summary')"
 ```
 
+## Build and check package
+
+```bash
+cd r
+R_LIBS_USER=/tmp/gaitkit-r-lib RETICULATE_PYTHON=/tmp/gaitkit-r-venv/bin/python R CMD build .
+R_LIBS_USER=/tmp/gaitkit-r-lib RETICULATE_PYTHON=/tmp/gaitkit-r-venv/bin/python R CMD check gaitkit_0.1.0.tar.gz --no-manual
+```
+
 ## Usage
 
 ```r
