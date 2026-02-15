@@ -24,7 +24,8 @@ _EXAMPLE_MAP = {
 
 
 def _normalize_example_name(name: str) -> str:
-    return name.lower().strip().replace(" ", "").replace("-", "").replace("_", "")
+    # Remove all whitespace and common separators for user-friendly aliases.
+    return "".join(name.lower().split()).replace("-", "").replace("_", "")
 
 
 def load_example(name: str = "healthy") -> dict:
