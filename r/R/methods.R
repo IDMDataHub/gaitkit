@@ -90,6 +90,13 @@ plot.gaitkit_result <- function(x, type = "events", ...) {
     message("No events to plot.")
     return(invisible(NULL))
   }
+  required_event_cols <- c("time", "event_type", "side")
+  if (!all(required_event_cols %in% names(events))) {
+    stop(
+      "events data must include columns: time, event_type, side",
+      call. = FALSE
+    )
+  }
 
   if (type == "events") {
     et <- tolower(as.character(events$event_type))
