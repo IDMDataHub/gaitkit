@@ -24,6 +24,12 @@ class TestDocsContract(unittest.TestCase):
         self.assertIn("python -m build", text)
         self.assertIn("R CMD check", text)
 
+    def test_matlab_docs_use_bike_in_primary_examples(self):
+        matlab_readme = (PROJECT_ROOT / "matlab" / "README.md").read_text(encoding="utf-8")
+        matlab_example = (PROJECT_ROOT / "matlab" / "example_detect.m").read_text(encoding="utf-8")
+        self.assertIn("gaitkit.detect('bike'", matlab_readme)
+        self.assertIn("gaitkit.detect('bike'", matlab_example)
+
 
 if __name__ == "__main__":
     unittest.main()
