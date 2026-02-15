@@ -111,8 +111,12 @@ gk_detect_ensemble <- function(data, methods = NULL, min_votes = 2L,
     if (any(!nzchar(methods))) {
       stop("'methods' cannot contain empty entries", call. = FALSE)
     }
+    if (anyDuplicated(methods)) {
+      stop("'methods' cannot contain duplicates", call. = FALSE)
+    }
   }
-  if (!is.numeric(min_votes) || length(min_votes) != 1L || is.na(min_votes) || min_votes < 1) {
+  if (!is.numeric(min_votes) || length(min_votes) != 1L || is.na(min_votes) ||
+      min_votes < 1 || min_votes != floor(min_votes)) {
     stop("'min_votes' must be an integer >= 1", call. = FALSE)
   }
   if (!is.numeric(tolerance_ms) || length(tolerance_ms) != 1L || is.na(tolerance_ms) || tolerance_ms < 0) {
