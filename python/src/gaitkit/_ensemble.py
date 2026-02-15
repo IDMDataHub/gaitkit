@@ -213,7 +213,10 @@ def _normalize_methods(methods: Sequence[str]) -> List[str]:
     out: List[str] = []
     seen = set()
     for method in methods:
-        key = _METHOD_ALIASES.get(str(method).lower().strip(), str(method).lower().strip())
+        raw = str(method).lower().strip()
+        if not raw:
+            raise ValueError("methods cannot contain empty entries")
+        key = _METHOD_ALIASES.get(raw, raw)
         if key in seen:
             continue
         out.append(key)
