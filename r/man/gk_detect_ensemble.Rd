@@ -10,7 +10,7 @@ gk_detect_ensemble(data, methods = NULL, min_votes = 2L, tolerance_ms = 50, fps 
   \code{angle_frames} or \code{fps}.}
 
   \item{methods}{Optional character vector of methods to include in the vote.
-  When provided, must contain at least two methods.}
+  When provided, must contain at least two non-empty method names.}
 
   \item{min_votes}{Integer minimum number of agreeing methods for consensus
   (must be >= 1).}
