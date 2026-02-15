@@ -279,10 +279,10 @@ def _build_deepevent_model(weights_path: Optional[str] = None):
                     with open(jp) as f:
                         model_json = f.read()
                     model = model_from_json(model_json)
-                    logger.info(f"Loaded DeepEvent architecture from {jp}")
+                    logger.info("Loaded DeepEvent architecture from %s", jp)
                     break
-                except Exception as e:
-                    logger.warning(f"Could not load JSON from {jp}: {e}")
+                except Exception as exc:
+                    logger.warning("Could not load JSON from %s: %s", jp, exc)
 
     # Fallback: build programmatically
     if model is None:
@@ -313,9 +313,9 @@ def _build_deepevent_model(weights_path: Optional[str] = None):
         try:
             model.load_weights(weights_path)
             weights_loaded = True
-            logger.info(f"Loaded DeepEvent weights from {weights_path}")
-        except Exception as e:
-            logger.warning(f"Could not load weights from {weights_path}: {e}")
+            logger.info("Loaded DeepEvent weights from %s", weights_path)
+        except Exception as exc:
+            logger.warning("Could not load weights from %s: %s", weights_path, exc)
 
     if not weights_loaded:
         env_weight = os.environ.get("GAITKIT_DEEPEVENT_WEIGHTS", "").strip()
@@ -325,9 +325,12 @@ def _build_deepevent_model(weights_path: Optional[str] = None):
                 try:
                     model.load_weights(str(wp))
                     weights_loaded = True
-                    logger.info(f"Loaded DeepEvent weights from GAITKIT_DEEPEVENT_WEIGHTS={wp}")
-                except Exception as e:
-                    logger.warning(f"Could not load weights from {wp}: {e}")
+                    logger.info(
+                        "Loaded DeepEvent weights from GAITKIT_DEEPEVENT_WEIGHTS=%s",
+                        wp,
+                    )
+                except Exception as exc:
+                    logger.warning("Could not load weights from %s: %s", wp, exc)
 
     if not weights_loaded:
         # Search standard locations for the weights file
@@ -351,10 +354,10 @@ def _build_deepevent_model(weights_path: Optional[str] = None):
                 try:
                     model.load_weights(str(wp))
                     weights_loaded = True
-                    logger.info(f"Loaded DeepEvent weights from {wp}")
+                    logger.info("Loaded DeepEvent weights from %s", wp)
                     break
-                except Exception as e:
-                    logger.warning(f"Could not load weights from {wp}: {e}")
+                except Exception as exc:
+                    logger.warning("Could not load weights from %s: %s", wp, exc)
 
     if not weights_loaded:
         downloaded = _download_deepevent_weights(_DEFAULT_WEIGHT_PATH)
