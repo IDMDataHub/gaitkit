@@ -130,8 +130,8 @@ events$left_hs
 | 6 | Ghoussayni | Kinematic (velocity) | Ghoussayni et al. (2004) |
 | 7 | DGEI | Kinematic (energy index) | Desailly et al. (2009) |
 | 8 | Vancanneyt | Kinematic (wavelet) | Vancanneyt et al. (2022) |
-| 9 | IntellEvent | Deep learning (BiLSTM) | Lempereur et al. (2020) |
-| 10 | DeepEvent | Deep learning (CNN) | Kidzinski et al. (2019) |
+| 9 | IntellEvent | Deep learning (BiLSTM) | Horsak & Kranzl (2023) |
+| 10 | DeepEvent | Deep learning (BiLSTM) | Lempereur et al. (2020) |
 
 ---
 
