@@ -5,6 +5,7 @@ from __future__ import annotations
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import sys
 
@@ -34,6 +35,61 @@ class TestDeepEventWeightsHelpers(unittest.TestCase):
     def test_default_cache_path_location(self):
         self.assertEqual(dd._DEFAULT_WEIGHT_PATH.name, "DeepEventWeight.h5")
         self.assertIn(".cache", str(dd._DEFAULT_WEIGHT_PATH))
+
+    def test_download_weights_success_with_mocked_response(self):
+        content = b"\x89HDF\r\n\x1a\n" + b"\x00" * 64
+
+        class _Resp:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+            def __init__(self, data: bytes):
+                self._data = data
+                self._idx = 0
+
+            def read(self, n: int = -1):
+                if self._idx >= len(self._data):
+                    return b""
+                if n < 0:
+                    n = len(self._data) - self._idx
+                out = self._data[self._idx:self._idx + n]
+                self._idx += len(out)
+                return out
+
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "DeepEventWeight.h5"
+            with mock.patch.object(dd, "_WEIGHTS_URLS", ["https://example.test/w.h5"]):
+                with mock.patch.object(dd.urllib.request, "urlopen", return_value=_Resp(content)):
+                    out = dd._download_deepevent_weights(target)
+            self.assertEqual(out, target)
+            self.assertTrue(target.exists())
+            self.assertTrue(dd._is_hdf5_file(target))
+
+    def test_download_weights_returns_none_on_invalid_payload(self):
+        class _Resp:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+            def read(self, n: int = -1):
+                # return bad bytes once, then EOF
+                if getattr(self, "_done", False):
+                    return b""
+                self._done = True
+                return b"not_hdf5"
+
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "DeepEventWeight.h5"
+            with mock.patch.object(dd, "_WEIGHTS_URLS", ["https://example.test/w_bad.h5"]):
+                with mock.patch.object(dd.urllib.request, "urlopen", return_value=_Resp()):
+                    out = dd._download_deepevent_weights(target)
+            self.assertIsNone(out)
+            self.assertFalse(target.exists())
 
 
 if __name__ == "__main__":
