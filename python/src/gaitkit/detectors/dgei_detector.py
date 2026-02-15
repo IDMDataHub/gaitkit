@@ -18,7 +18,7 @@ IMU data; adapted here for 3-D marker positions.
 """
 
 import numpy as np
-from typing import List, Tuple, Dict, Optional
+from typing import List, Tuple
 from dataclasses import dataclass
 from scipy.signal import find_peaks
 from scipy.ndimage import gaussian_filter1d
@@ -29,8 +29,8 @@ class GaitEvent:
     """A single gait event."""
     frame_index: int
     time: float
-    event_type: str  # 'heel_strike' ou 'toe_off'
-    side: str  # 'left' ou 'right'
+    event_type: str  # 'heel_strike' or 'toe_off'
+    side: str  # 'left' or 'right'
     probability: float = 1.0
 
 
@@ -38,8 +38,7 @@ class DGEIDetector:
     """
     Dynamic Gait Event Identifier.
 
-    Utilise les différences de premier ordre des positions des pieds
-    pour détecter les événements de marche.
+    Uses first-order differences of foot trajectories to detect gait events.
     """
 
     def __init__(self, fps: float = 100.0,
@@ -47,16 +46,18 @@ class DGEIDetector:
                  bar_threshold: float = 0.01,
                  peak_ratio: float = 0.6,
                  queue_length: int = 5):
-        """
-        Args:
-            fps: Fréquence d'échantillonnage
-            sleep_frames: Frames à ignorer après une détection (auto si None)
-            bar_threshold: Seuil pour distinguer positive/negative
-            peak_ratio: Ratio minimum pour valider un pic (0.6 = 60%)
-            queue_length: Longueur de la queue pour le seuil adaptatif
-        """
+        if fps <= 0:
+            raise ValueError("fps must be strictly positive")
+        if sleep_frames is not None and sleep_frames <= 0:
+            raise ValueError("sleep_frames must be > 0 when provided")
+        if bar_threshold < 0:
+            raise ValueError("bar_threshold must be >= 0")
+        if peak_ratio <= 0:
+            raise ValueError("peak_ratio must be strictly positive")
+        if queue_length <= 0:
+            raise ValueError("queue_length must be strictly positive")
         self.fps = fps
-        self.sleep_frames = sleep_frames if sleep_frames else int(0.3 * fps)  # ~300ms
+        self.sleep_frames = int(sleep_frames) if sleep_frames is not None else int(0.3 * fps)
         self.bar_threshold = bar_threshold
         self.peak_ratio = peak_ratio
         self.queue_length = queue_length
@@ -74,7 +75,7 @@ class DGEIDetector:
 
         for i, frame in enumerate(angle_frames):
             if frame.landmark_positions:
-                # Utiliser heel si disponible, sinon ankle
+                # Use heel if available, otherwise fallback to ankle.
                 if 'left_heel' in frame.landmark_positions:
                     left_z[i] = frame.landmark_positions['left_heel'][2]
                 elif 'left_ankle' in frame.landmark_positions:
@@ -91,8 +92,8 @@ class DGEIDetector:
         """
         Compute positive and negative DGEI curves.
 
-        DGEIpos = somme des variations positives (montée du pied = swing)
-        DGEIneg = somme des variations négatives (descente du pied = strike)
+        DGEIpos = sum of positive differences (foot rise = swing)
+        DGEIneg = sum of negative differences (foot descent = strike)
 
         Returns:
             dgei_pos, dgei_neg
@@ -102,7 +103,7 @@ class DGEIDetector:
         # First-order differences
         dy = np.diff(signal, prepend=signal[0])
 
-        # Calculer les coefficients adaptatifs
+        # Compute adaptive coefficients.
         sigma_dy = np.std(dy) + 1e-10
         mu_dv = np.mean(np.abs(dy)) + 1e-10
         alpha = sigma_dy / (sigma_dy + mu_dv)
@@ -117,18 +118,18 @@ class DGEIDetector:
         for i in range(window_size, n):
             window = dy[i-window_size:i]
 
-            # Positive differences (pied monte)
+            # Positive differences (foot rises).
             pos_mask = window > self.bar_threshold
             if pos_mask.any():
                 dgei_pos[i] = np.sum(alpha * window[pos_mask] + beta * window[pos_mask])
 
-            # Negative differences (pied descend)
+            # Negative differences (foot descends).
             neg_mask = window < -self.bar_threshold
             if neg_mask.any():
                 dgei_neg[i] = np.sum(alpha * np.abs(window[neg_mask]) +
                                      beta * np.abs(window[neg_mask]))
 
-        # Lisser les courbes
+        # Smooth DGEI curves.
         dgei_pos = gaussian_filter1d(dgei_pos, sigma=2)
         dgei_neg = gaussian_filter1d(dgei_neg, sigma=2)
 
@@ -153,17 +154,17 @@ class DGEIDetector:
         min_height = min_height_ratio * np.max(signal)
 
         # Detect all candidate peaks
-        candidates, properties = find_peaks(
+        candidates, _ = find_peaks(
             signal,
             height=min_height,
-            distance=int(0.2 * self.fps),  # Min 200ms entre pics
+            distance=int(0.2 * self.fps),  # minimum 200 ms between peaks
             prominence=min_height * 0.3
         )
 
         if len(candidates) == 0:
             return []
 
-        # Appliquer le sleep time et seuil adaptatif
+        # Apply sleep-time gating and adaptive thresholding.
         peaks = []
         peak_values = []
         weights = np.arange(1, self.queue_length + 1)
@@ -204,16 +205,16 @@ class DGEIDetector:
         if n < 30:
             return [], [], {'detector': 'DGEI', 'error': 'Too few frames'}
 
-        # Extraire les signaux des pieds
+        # Extract foot signals.
         left_z, right_z = self._extract_foot_signals(angle_frames)
 
-        # Calculer les courbes DGEI pour chaque pied
+        # Compute DGEI curves for each foot.
         left_pos, left_neg = self._compute_dgei_curve(left_z)
         right_pos, right_neg = self._compute_dgei_curve(right_z)
 
         # Detect events
         # HS = peaks in negative DGEI (foot descending toward the ground)
-        # TO = pics dans DGEI positif (pied monte)
+        # TO = peaks in positive DGEI (foot rising)
 
         left_hs_peaks = self._detect_peaks_with_sleep(left_neg)
         left_to_peaks = self._detect_peaks_with_sleep(left_pos)
