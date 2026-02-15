@@ -34,7 +34,7 @@ Calibration parameters (optimised on 819 C3D files / 10 910 events):
 """
 
 import numpy as np
-from typing import List, Tuple, Dict, Optional
+from typing import Optional
 from dataclasses import dataclass
 from scipy.signal import butter, filtfilt, find_peaks
 
@@ -140,6 +140,20 @@ class VancanneytDetector:
                  vy_threshold=None, vz_threshold=None,
                  windowing_mph_coeff=0.5, windowing_mpd=50,
                  fo_frame_correction=0):
+        if fps <= 0:
+            raise ValueError("fps must be strictly positive")
+        if filter_cutoff is not None and filter_cutoff <= 0:
+            raise ValueError("filter_cutoff must be strictly positive")
+        if vx_threshold is not None and vx_threshold < 0:
+            raise ValueError("vx_threshold must be >= 0")
+        if vy_threshold is not None and vy_threshold < 0:
+            raise ValueError("vy_threshold must be >= 0")
+        if vz_threshold is not None and vz_threshold < 0:
+            raise ValueError("vz_threshold must be >= 0")
+        if windowing_mph_coeff < 0:
+            raise ValueError("windowing_mph_coeff must be >= 0")
+        if windowing_mpd <= 0:
+            raise ValueError("windowing_mpd must be strictly positive")
         self.fps = fps
         self.filter_cutoff = filter_cutoff if filter_cutoff is not None else self.DEFAULT_FILTER_CUTOFF
         self.vx_thresh = vx_threshold if vx_threshold is not None else self.DEFAULT_VX_THRESH
