@@ -146,7 +146,7 @@ def detect_events_structured(
 
     Returns a plain dictionary designed for easy JSON serialisation.
     """
-    if fps is None or float(fps) <= 0:
+    if not isinstance(fps, (int, float)) or fps <= 0:
         raise ValueError("fps must be a positive number")
     if not isinstance(method, str) or not method.strip():
         raise ValueError("method must be a non-empty string")
