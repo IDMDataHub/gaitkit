@@ -18,9 +18,15 @@ from ._core import _dicts_to_angle_frames, detect, list_methods
 def _normalize_units(units: Mapping[str, str] | None) -> Dict[str, str]:
     if units is None:
         return {"position": "mm", "angles": "deg"}
-    out = dict(units)
+    if not isinstance(units, Mapping):
+        raise ValueError("units must be a mapping with optional keys 'position' and 'angles'")
+    out = {k: str(v).lower().strip() for k, v in dict(units).items()}
     out.setdefault("position", "mm")
     out.setdefault("angles", "deg")
+    if out["position"] not in {"mm", "m"}:
+        raise ValueError("units.position must be 'mm' or 'm'")
+    if out["angles"] not in {"deg", "rad"}:
+        raise ValueError("units.angles must be 'deg' or 'rad'")
     return out
 
 
@@ -41,6 +47,8 @@ def build_angle_frames(
     """
     if frames is None:
         return []
+    if isinstance(frames, (str, bytes)):
+        raise ValueError("frames must be a sequence of frame dictionaries, not a string")
 
     units_norm = _normalize_units(units)
     pos_scale = 1000.0 if str(units_norm.get("position", "mm")).lower() == "m" else 1.0
@@ -210,6 +218,13 @@ def export_detection(
     prefix = Path(output_prefix)
     prefix.parent.mkdir(parents=True, exist_ok=True)
     wanted = [str(f).lower().strip() for f in formats]
+    if not wanted:
+        raise ValueError("formats must not be empty")
+    allowed = {"json", "csv", "xlsx"}
+    unknown = [f for f in wanted if f not in allowed]
+    if unknown:
+        raise ValueError(f"Unknown export format(s): {unknown}. Allowed: {sorted(allowed)}")
+    wanted = list(dict.fromkeys(wanted))
     written: Dict[str, str] = {}
 
     if "json" in wanted:
