@@ -17,10 +17,14 @@ from ._core import detect, list_methods, GaitResult
 from ._ensemble import detect_ensemble
 from ._io import load_example, list_examples, load_c3d
 from ._viz import compare_plot
+from ._compat import build_angle_frames, detect_events_structured, export_detection
 
 __all__ = [
     "detect",
+    "detect_events_structured",
     "detect_ensemble",
+    "export_detection",
+    "build_angle_frames",
     "list_methods",
     "load_example",
     "list_examples",
