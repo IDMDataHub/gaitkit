@@ -47,7 +47,7 @@ Issues = "https://github.com/IDMDataHub/gaitkit/issues"
 where = ["src"]
 
 [tool.setuptools.package-data]
-gaitkit = ["native/*.c", "native/*.h", "data/*.json", "data/*.onnx", "data/*.h5"]
+gaitkit = ["native/*.c", "native/*.h", "data/*.json", "data/*.onnx"]
 
 [tool.pytest.ini_options]
 testpaths = ["../tests"]

@@ -5,7 +5,6 @@ include src/gaitkit/native/*.h
 # Data files (model weights, config)
 include src/gaitkit/data/*.json
 include src/gaitkit/data/*.onnx
-include src/gaitkit/data/*.h5
 
 # Top-level docs
 include LICENSE
