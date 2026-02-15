@@ -9,21 +9,17 @@ This package exposes the `gaitkit` Python backend in R via `reticulate`.
 install.packages(c("reticulate", "jsonlite"))
 # install python package first (wheel or editable)
 # then:
-devtools::install_local("recode/cran/gaitkit")
+devtools::install_local("gaitkit/r")
 ```
 
 ## Usage
 
 ```r
 library(gaitkit)
-methods <- gait_methods()
-res <- gait_detect(
-  "bayesian_bis",
-  frames,
-  fps = 100,
-  units = list(position = "mm", angles = "deg")
-)
+methods <- gk_methods()
+trial <- gk_load_example("healthy")
+res <- gk_detect(trial, method = "bike")
 ```
 
 `frames` is a list of named lists compatible with
-`gaitkit.detect_events_structured`.
+`gaitkit.detect`.

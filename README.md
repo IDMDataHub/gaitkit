@@ -51,8 +51,8 @@ trial = gaitkit.load_c3d("walk_01.c3d")
 # Detect gait events (defaults to BIKE method)
 events = gaitkit.detect(trial, method="bike")
 
-print(events.heel_strikes_left)   # frame indices
-print(events.toe_offs_right)
+print(events.left_hs)   # list of {frame, time, side, confidence}
+print(events.right_to)
 ```
 
 ### R
@@ -60,8 +60,9 @@ print(events.toe_offs_right)
 ```r
 library(gaitkit)
 
-events <- gait_detect("walk_01.c3d", method = "bike")
-events$heel_strikes_left
+trial <- gk_load_example("healthy")
+events <- gk_detect(trial, method = "bike")
+events$left_hs
 ```
 
 ---
