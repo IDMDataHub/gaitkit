@@ -35,6 +35,10 @@ class TestCompatHelpers(unittest.TestCase):
             with self.assertRaises(ValueError):
                 _compat.export_detection(payload, prefix, formats=("json", "xml"))
 
+    def test_detect_events_structured_requires_non_empty_method(self):
+        with self.assertRaises(ValueError):
+            _compat.detect_events_structured("", [], 100.0)
+
 
 if __name__ == "__main__":
     unittest.main()
