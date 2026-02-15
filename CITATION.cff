@@ -6,6 +6,7 @@ authors:
   - family-names: "Fer"
     given-names: "Frederic"
     email: "f.fer@institut-myologie.org"
+    orcid: "https://orcid.org/0009-0002-2529-2479"
 repository-code: "https://github.com/IDMDataHub/gaitkit"
 license: "MIT"
 version: "0.1.0"
