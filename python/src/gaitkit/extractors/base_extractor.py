@@ -121,6 +121,8 @@ class BaseExtractor(ABC):
     """Classe de base pour tous les extracteurs."""
 
     def __init__(self, data_dir: str):
+        if not isinstance(data_dir, (str, Path)) or not str(data_dir).strip():
+            raise ValueError("'data_dir' must be a non-empty path-like value")
         self.data_dir = Path(data_dir)
         if not self.data_dir.exists():
             raise ValueError(f"Directory not found: {data_dir}")
@@ -149,6 +151,9 @@ class BaseExtractor(ABC):
 
     def extract_all(self, max_files: Optional[int] = None) -> List[ExtractionResult]:
         """Extrait toutes les données de la base."""
+        if max_files is not None:
+            if not isinstance(max_files, int) or max_files <= 0:
+                raise ValueError("'max_files' must be a positive integer when provided")
         files = self.list_files()
         if max_files:
             files = files[:max_files]
@@ -202,4 +207,6 @@ def compute_signed_angle_2d(v1: np.ndarray, v2: np.ndarray) -> float:
         Angle en degrés (-180 à 180)
     """
     angle = np.arctan2(v2[1], v2[0]) - np.arctan2(v1[1], v1[0])
-    return np.degrees(angle)
+    angle_deg = np.degrees(angle)
+    # Wrap to [-180, 180] to match documented contract.
+    return ((angle_deg + 180.0) % 360.0) - 180.0
