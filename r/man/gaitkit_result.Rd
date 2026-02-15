@@ -29,6 +29,9 @@ S3 methods for printing, summarizing and plotting outputs returned by
 
 For event timelines, both event label styles are accepted:
 \code{"HS"}/\code{"TO"} and \code{"heel_strike"}/\code{"toe_off"}.
+
+The events plot expects \code{x$events} to include columns
+\code{time}, \code{event_type}, and \code{side}.
 }
 \examples{
 \dontrun{
