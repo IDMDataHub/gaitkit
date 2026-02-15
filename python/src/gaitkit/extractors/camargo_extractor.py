@@ -44,7 +44,9 @@ try:
     HAS_MATIO = True
 except ImportError:
     HAS_MATIO = False
-    logger.warning("matio not installed. Install with: pip install git+https://github.com/foreverallama/matio")
+    logger.debug(
+        "matio not installed. Install with: pip install git+https://github.com/foreverallama/matio"
+    )
 
 
 # ---------------------------------------------------------------------------
