@@ -24,6 +24,12 @@ class TestLoadC3D(unittest.TestCase):
         with self.assertRaises(ValueError):
             _io.load_example(None)  # type: ignore[arg-type]
 
+    def test_load_example_accepts_human_friendly_alias_spelling(self):
+        base = _io.load_example("parkinson")
+        self.assertEqual(_io.load_example("ParkinSon")["population"], base["population"])
+        self.assertEqual(_io.load_example("par kin son")["population"], base["population"])
+        self.assertEqual(_io.load_example("par-kin-son")["population"], base["population"])
+
     def test_load_c3d_rejects_missing_or_invalid_path_before_import(self):
         with self.assertRaises(ValueError):
             _io.load_c3d("not_a_c3d.txt")
