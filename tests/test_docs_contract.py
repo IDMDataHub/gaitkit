@@ -21,6 +21,8 @@ class TestDocsContract(unittest.TestCase):
         text = (PROJECT_ROOT / "REPRODUCIBILITY.md").read_text(encoding="utf-8")
         self.assertIn("tests.test_detectors_registry", text)
         self.assertIn("tests.test_evaluation_matching", text)
+        self.assertIn("python -m build", text)
+        self.assertIn("R CMD check", text)
 
 
 if __name__ == "__main__":
