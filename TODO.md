@@ -28,9 +28,9 @@ state for publication and broad community usage.
 
 ## 4) Documentation for External Users
 
-- [ ] Add `CONTRIBUTING.md` (bug reports, coding standards, test policy).
-- [ ] Add `SECURITY.md` (reporting channel and disclosure policy).
-- [ ] Add explicit troubleshooting section for reticulate interpreter selection.
+- [x] Add `CONTRIBUTING.md` (bug reports, coding standards, test policy).
+- [x] Add `SECURITY.md` (reporting channel and disclosure policy).
+- [x] Add explicit troubleshooting section for reticulate interpreter selection.
 - [ ] Add "minimal reproducible example" templates for issue reports.
 - [ ] Add benchmark page (speed + accuracy) with dataset and hardware details.
 
@@ -55,4 +55,3 @@ state for publication and broad community usage.
 - [ ] Add large-trial stress tests (long sequences, batch usage).
 - [ ] Profile hot paths and document optimization decisions.
 - [ ] Add memory-usage checks for long recordings.
-
