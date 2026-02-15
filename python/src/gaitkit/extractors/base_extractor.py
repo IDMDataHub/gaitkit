@@ -1,11 +1,14 @@
 """Shared extractor abstractions and geometry helpers."""
 
+import logging
 import numpy as np
 import pandas as pd
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -181,7 +184,7 @@ class BaseExtractor(ABC):
                 result = self.extract_file(f)
                 results.append(result)
             except Exception as exc:
-                print(f"Error extracting {f}: {exc}")
+                logger.warning("Error extracting %s: %s", f, exc)
 
         return results
 
