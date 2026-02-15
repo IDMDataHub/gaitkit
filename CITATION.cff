@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use gaitkit in your research, please cite it using the metadata below."
+title: "gaitkit: Universal gait event detection toolkit for motion capture data"
+type: software
+authors:
+  - family-names: "Fer"
+    given-names: "Frederic"
+    email: "frederic.fer@univ-poitiers.fr"
+repository-code: "https://github.com/IDMDataHub/gaitkit"
+license: "MIT"
+version: "0.1.0"
+date-released: "2026-02-15"
