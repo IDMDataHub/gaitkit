@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  python-tests:
+    name: Python tests (py${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install package
+        run: python -m pip install -e ./python
+
+      - name: Run Python unit tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}/python/src
+        run: python -m unittest -v
+
+  r-tests:
+    name: R tests (reticulate bridge)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Setup R
+        uses: r-lib/actions/setup-r@v2
+
+      - name: Install Python backend
+        run: python -m pip install -e ./python
+
+      - name: Install R dependencies
+        run: |
+          Rscript -e "install.packages(c('testthat','reticulate','jsonlite'), repos='https://cloud.r-project.org')"
+
+      - name: Run R tests
+        env:
+          RETICULATE_PYTHON: ${{ env.pythonLocation }}/bin/python
+        run: Rscript -e "testthat::test_dir('r/tests/testthat', reporter='summary')"
