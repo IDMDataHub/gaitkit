@@ -57,7 +57,9 @@ if _HAS_DEEPEVENT:
 
 
 def get_detector(name: str, fps: float = 100.0, **kwargs):
-    key = name.lower()
+    if not isinstance(name, str) or not name.strip():
+        raise ValueError("Detector name must be a non-empty string")
+    key = name.lower().strip()
     if key not in DETECTOR_REGISTRY:
         available = ", ".join(sorted(DETECTOR_REGISTRY.keys()))
         raise ValueError(f"Unknown detector '{name}'. Available: {available}")
