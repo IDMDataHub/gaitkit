@@ -177,7 +177,7 @@ class KuopioExtractor(BaseExtractor):
                     if not np.any(np.isnan(pos)) and np.linalg.norm(pos) > 0.001:
                         return pos
             return None
-        except Exception:
+        except (KeyError, IndexError, TypeError, ValueError):
             return None
 
     def _find_landmark(self, c3d_data, landmark: str, frame: int) -> Optional[np.ndarray]:
@@ -310,7 +310,7 @@ class KuopioExtractor(BaseExtractor):
                 return 'left' if l_dist < r_dist else 'right'
 
             return None
-        except Exception:
+        except (KeyError, IndexError, TypeError, ValueError):
             return None
 
     def _extract_force_plate_events(self, c3d_data) -> Dict[str, List[int]]:
