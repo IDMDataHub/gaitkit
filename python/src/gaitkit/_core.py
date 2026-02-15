@@ -328,23 +328,38 @@ def detect(
 
 def _normalize_input(data, fps):
     """Convert various input formats to (angle_frames, fps)."""
+    if fps is not None and fps <= 0:
+        raise ValueError("fps must be strictly positive")
+
     # Case 1: string/Path → C3D file
     if isinstance(data, (str, Path)):
         p = Path(data)
         if p.suffix.lower() == ".c3d":
             from ._io import load_c3d
             trial = load_c3d(str(p))
+            if not trial["angle_frames"]:
+                raise ValueError("No angle frames were found in the C3D file")
+            if trial["fps"] <= 0:
+                raise ValueError("Invalid sampling frequency found in the C3D file")
             return trial["angle_frames"], trial["fps"]
         raise ValueError(f"Unsupported file format: {p.suffix}")
 
     # Case 2: ExtractionResult (has .angle_frames and .fps)
     if hasattr(data, "angle_frames") and hasattr(data, "fps"):
+        if not data.angle_frames:
+            raise ValueError("Input contains no angle frames")
+        if data.fps <= 0:
+            raise ValueError("Input sampling frequency must be strictly positive")
         return data.angle_frames, data.fps
 
     # Case 3: dict with 'angle_frames' key (from load_example)
     if isinstance(data, dict) and "angle_frames" in data:
         resolved_fps = fps or data.get("fps", 100.0)
+        if resolved_fps <= 0:
+            raise ValueError("Input sampling frequency must be strictly positive")
         af = data["angle_frames"]
+        if not af:
+            raise ValueError("Input contains no angle frames")
         # If raw dicts, convert to AngleFrame-like objects
         if af and isinstance(af[0], dict):
             af = _dicts_to_angle_frames(af)
@@ -354,7 +369,11 @@ def _normalize_input(data, fps):
     if isinstance(data, (list, tuple)):
         if fps is None:
             raise ValueError("fps is required when data is a list of frames")
+        if fps <= 0:
+            raise ValueError("fps must be strictly positive")
         af = data
+        if not af:
+            raise ValueError("Input contains no angle frames")
         if af and isinstance(af[0], dict):
             af = _dicts_to_angle_frames(af)
         return af, fps
