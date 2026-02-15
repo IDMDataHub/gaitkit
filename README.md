@@ -36,6 +36,7 @@ The R package calls the Python backend through `reticulate`.
 Make sure `gaitkit` is installed in the Python environment used by R, or run:
 
 ```r
+reticulate::use_python("/path/to/python", required = TRUE)  # optional but recommended
 library(gaitkit)
 gk_install_python()
 ```
