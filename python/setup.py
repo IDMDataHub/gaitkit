@@ -5,13 +5,20 @@ This file is required alongside pyproject.toml so that
 C acceleration module shipped with gaitkit.
 """
 
+import sys
+
 from setuptools import Extension, setup
+
+if sys.platform.startswith("win"):
+    _extra_compile_args = ["/O2"]
+else:
+    _extra_compile_args = ["-O3"]
 
 ext_modules = [
     Extension(
         name="gaitkit.native._gait_native",
         sources=["src/gaitkit/native/_gait_native.c"],
-        extra_compile_args=["-O3"],
+        extra_compile_args=_extra_compile_args,
     )
 ]
 
