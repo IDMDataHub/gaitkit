@@ -5,8 +5,9 @@
 gk_detect(data, method = "bike", fps = NULL)
 }
 \arguments{
-  \item{data}{Input data. Either a named list with \code{angle_frames} and
-  \code{fps} (for example from \code{gk_load_example()}), or a path to a C3D file.}
+  \item{data}{Input data. Either a named list that includes at least
+  \code{angle_frames} or \code{fps} (for example from \code{gk_load_example()}),
+  or a non-empty file path to a C3D file.}
 
   \item{method}{Non-empty character scalar method name.
   Use \code{gk_methods()} to list options.}
