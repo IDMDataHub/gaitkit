@@ -16,6 +16,13 @@ from scipy.ndimage import gaussian_filter1d
 from scipy.signal import find_peaks
 
 
+def _landmark_positions(frame):
+    """Return landmark_positions from object or dict frame payloads."""
+    if isinstance(frame, dict):
+        return frame.get("landmark_positions")
+    return getattr(frame, "landmark_positions", None)
+
+
 def detect_axes(angle_frames):
     """Auto-detect progression (AP) and vertical axes from trajectory data.
 
@@ -34,11 +41,15 @@ def detect_axes(angle_frames):
         Defaults to Z (index 2); falls back to the axis with the smallest
         range among the non-AP axes.
     """
+    if not angle_frames:
+        return 1, 2  # default: Y=AP, Z=vertical
+
     # Extract ankle positions over time
     positions = []
     for af in angle_frames:
-        if af.landmark_positions and "left_ankle" in af.landmark_positions:
-            pos = af.landmark_positions["left_ankle"]
+        lp = _landmark_positions(af)
+        if lp and "left_ankle" in lp:
+            pos = lp["left_ankle"]
             if pos != (0.0, 0.0, 0.0):
                 positions.append(pos)
 
@@ -92,6 +103,9 @@ def _direction_score_acceleration(angle_frames, ap_axis, direction, fps,
     float
         Positive score favours this direction; negative disfavours it.
     """
+    if fps is None or fps <= 0:
+        fps = 100.0
+
     n = len(angle_frames)
     if n < 20:
         return 0.0
@@ -102,7 +116,7 @@ def _direction_score_acceleration(angle_frames, ap_axis, direction, fps,
     ra_raw = np.zeros(n)
     valid_mask = np.zeros(n, dtype=bool)
     for i in range(n):
-        lp = angle_frames[i].landmark_positions
+        lp = _landmark_positions(angle_frames[i])
         if lp is None:
             continue
         lh = lp.get("left_hip", (0.0, 0, 0))
@@ -186,6 +200,8 @@ def detect_walking_direction(angle_frames, ap_axis=None, fps=None):
     """
     if ap_axis is None:
         ap_axis, _ = detect_axes(angle_frames)
+    elif ap_axis not in (0, 1, 2):
+        raise ValueError("ap_axis must be 0, 1, 2, or None")
 
     if fps is None:
         fps = 100.0
@@ -195,8 +211,9 @@ def detect_walking_direction(angle_frames, ap_axis=None, fps=None):
     # Only fall back to acceleration asymmetry for treadmill-like data.
     positions = []
     for af in angle_frames:
-        if af.landmark_positions and "left_ankle" in af.landmark_positions:
-            pos = af.landmark_positions["left_ankle"]
+        lp = _landmark_positions(af)
+        if lp and "left_ankle" in lp:
+            pos = lp["left_ankle"]
             if pos != (0.0, 0.0, 0.0):
                 positions.append(pos[ap_axis])
 
