@@ -7,13 +7,16 @@ gk_detect_ensemble(data, methods = NULL, min_votes = 2L, tolerance_ms = 50, fps 
 \arguments{
   \item{data}{Input data, same contract as \code{gk_detect()}.}
 
-  \item{methods}{Optional character vector of methods to include in the vote.}
+  \item{methods}{Optional character vector of methods to include in the vote.
+  When provided, must contain at least two methods.}
 
-  \item{min_votes}{Integer minimum number of agreeing methods for consensus.}
+  \item{min_votes}{Integer minimum number of agreeing methods for consensus
+  (must be >= 1).}
 
-  \item{tolerance_ms}{Numeric temporal clustering tolerance in milliseconds.}
+  \item{tolerance_ms}{Numeric temporal clustering tolerance in milliseconds
+  (must be >= 0).}
 
-  \item{fps}{Optional numeric sampling frequency in Hz.}
+  \item{fps}{Optional positive numeric sampling frequency in Hz.}
 }
 \value{
 A \code{gaitkit_result} object with consensus events and confidence scores.
