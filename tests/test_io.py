@@ -33,6 +33,10 @@ class TestLoadC3D(unittest.TestCase):
     def test_load_c3d_rejects_missing_or_invalid_path_before_import(self):
         with self.assertRaises(ValueError):
             _io.load_c3d("not_a_c3d.txt")
+        with self.assertRaises(ValueError):
+            _io.load_c3d("")  # type: ignore[arg-type]
+        with self.assertRaises(ValueError):
+            _io.load_c3d(None)  # type: ignore[arg-type]
         with self.assertRaises(FileNotFoundError):
             _io.load_c3d("missing_file.c3d")
 
@@ -50,6 +54,8 @@ class TestLoadC3D(unittest.TestCase):
             with mock.patch.dict(sys.modules, {"ezc3d": fake_ezc3d}):
                 with self.assertRaises(ValueError):
                     _io.load_c3d(str(c3d_path), marker_set="unknown")
+                with self.assertRaises(ValueError):
+                    _io.load_c3d(str(c3d_path), marker_set="")
 
     def test_angle_extraction_failure_is_non_blocking(self):
         # Include an angle label that does not exist in points data to force IndexError
