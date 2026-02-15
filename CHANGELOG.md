@@ -7,6 +7,7 @@
 - Expanded non-regression and unit test coverage (Python + R bridge).
 - Improved optional-dependency portability for extractor imports.
 - Clarified install, testing, and reproducibility documentation.
+- Strengthened evaluation helper input validation (metrics/matching/statistics).
 
 ## 0.1.0 (2026-02-15)
 
