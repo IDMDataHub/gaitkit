@@ -46,6 +46,8 @@ def load_example(name: str = "healthy") -> dict:
     >>> len(trial["angle_frames"])
     374
     """
+    if not isinstance(name, str) or not name.strip():
+        raise ValueError("Example name must be a non-empty string")
     key = name.lower().strip()
     if key not in _EXAMPLE_MAP:
         avail = sorted(set(_EXAMPLE_MAP.keys()) - {"fukuchi", "pd", "parkinsons", "avc"})
@@ -90,6 +92,15 @@ def load_c3d(path: str, marker_set: str = "auto") -> dict:
     ImportError
         If ezc3d is not installed.  Install with pip install gaitkit[c3d]``.
     """
+    c3d_path = Path(path)
+    if c3d_path.suffix.lower() != ".c3d":
+        raise ValueError(f"Unsupported file format: {c3d_path.suffix or '<none>'}")
+    if not c3d_path.exists():
+        raise FileNotFoundError(f"C3D file not found: {c3d_path}")
+
+    if not isinstance(marker_set, str):
+        raise ValueError("marker_set must be 'auto', 'pig', or 'isb'")
+
     try:
         import ezc3d
     except ImportError:
@@ -98,7 +109,7 @@ def load_c3d(path: str, marker_set: str = "auto") -> dict:
             "Install with: pip install gaitkit[c3d]"
         )
 
-    c3d = ezc3d.c3d(str(path))
+    c3d = ezc3d.c3d(str(c3d_path))
     fps = float(c3d["header"]["points"]["frame_rate"])
     points = c3d["data"]["points"]           # (4, n_markers, n_frames)
     labels = c3d["parameters"]["POINT"]["LABELS"]["value"]
@@ -190,5 +201,5 @@ def load_c3d(path: str, marker_set: str = "auto") -> dict:
         "angle_frames": angle_frames,
         "fps": fps,
         "n_frames": n_frames,
-        "source_file": str(path),
+        "source_file": str(c3d_path),
     }
