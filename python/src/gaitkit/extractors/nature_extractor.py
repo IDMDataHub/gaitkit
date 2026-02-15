@@ -18,11 +18,14 @@ import pandas as pd
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
 import re
+import logging
 
 from .base_extractor import (
     BaseExtractor, ExtractionResult, AngleFrame, GroundTruth,
     compute_angle_from_3points
 )
+
+logger = logging.getLogger(__name__)
 
 # Import optionnel de ezc3d
 try:
@@ -30,7 +33,7 @@ try:
     HAS_EZC3D = True
 except ImportError:
     HAS_EZC3D = False
-    print("Warning: ezc3d not installed. Install with: pip install ezc3d")
+    logger.debug("ezc3d not installed. Install with: pip install ezc3d")
 
 
 class NatureC3DExtractor(BaseExtractor):
