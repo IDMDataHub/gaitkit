@@ -148,6 +148,8 @@ def detect_events_structured(
     """
     if fps is None or float(fps) <= 0:
         raise ValueError("fps must be a positive number")
+    if not isinstance(method, str) or not method.strip():
+        raise ValueError("method must be a non-empty string")
 
     af = build_angle_frames(frames, units=units)
     result = detect(af, method=method, fps=float(fps))
