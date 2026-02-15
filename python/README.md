@@ -1,5 +1,33 @@
-# gaitkit (Python package)
+# gaitkit (Python)
 
-Python package for universal gait event detection from motion capture data.
+Python package for gait event detection from motion-capture data.
 
-Main repository documentation: ../README.md
+## Install
+
+```bash
+pip install gaitkit
+```
+
+Optional extras:
+
+```bash
+pip install "gaitkit[all]"   # onnx + deep + viz + c3d helpers
+```
+
+## Quick Start
+
+```python
+import gaitkit
+
+trial = gaitkit.load_example("healthy")
+result = gaitkit.detect(trial, method="bike")
+print(result.summary())
+```
+
+DeepEvent weights are downloaded automatically on first DeepEvent use and
+cached in `~/.cache/gaitkit/`.
+
+## Project
+
+- Repository: https://github.com/IDMDataHub/gaitkit
+- Issue tracker: https://github.com/IDMDataHub/gaitkit/issues
