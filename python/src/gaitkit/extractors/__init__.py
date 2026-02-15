@@ -7,27 +7,36 @@ gait events.
 """
 
 from .base_extractor import BaseExtractor, ExtractionResult, AngleFrame, GroundTruth
-from .nature_extractor import NatureC3DExtractor
-from .figshare_pd_extractor import FigsharePDExtractor
-from .fukuchi_extractor import FukuchiExtractor
-from .vancriekinge_extractor import VanCriekingeExtractor, VanCriekingeHealthyExtractor, VanCriekingeStrokeExtractor
-from .schreiber_extractor import SchreiberExtractor
-from .vanderzee_extractor import VanderzeeExtractor
-from .kuopio_extractor import KuopioExtractor
-from .kuopio_openpose_extractor import KuopioOpenPoseExtractor
-from .hood_amputee_extractor import HoodAmputeeExtractor
-from .elderly_fallrisk_extractor import ElderlyFallriskExtractor
-from .camargo_extractor import CamargoExtractor
 
 __all__ = [
-    "BaseExtractor", "ExtractionResult", "AngleFrame", "GroundTruth",
-    "NatureC3DExtractor", "FigsharePDExtractor", "FukuchiExtractor",
-    "VanCriekingeExtractor", "VanCriekingeHealthyExtractor", "VanCriekingeStrokeExtractor",
-    "SchreiberExtractor",
-    "VanderzeeExtractor",
-    "KuopioExtractor",
-    "KuopioOpenPoseExtractor",
-    "HoodAmputeeExtractor",
-    "ElderlyFallriskExtractor",
-    "CamargoExtractor",
+    "BaseExtractor",
+    "ExtractionResult",
+    "AngleFrame",
+    "GroundTruth",
 ]
+
+
+def _optional_import(module_name, names):
+    try:
+        mod = __import__(module_name, globals(), locals(), names, 1)
+    except Exception:
+        return
+    for name in names:
+        globals()[name] = getattr(mod, name)
+        __all__.append(name)
+
+
+_optional_import(".nature_extractor", ["NatureC3DExtractor"])
+_optional_import(".figshare_pd_extractor", ["FigsharePDExtractor"])
+_optional_import(".fukuchi_extractor", ["FukuchiExtractor"])
+_optional_import(
+    ".vancriekinge_extractor",
+    ["VanCriekingeExtractor", "VanCriekingeHealthyExtractor", "VanCriekingeStrokeExtractor"],
+)
+_optional_import(".schreiber_extractor", ["SchreiberExtractor"])
+_optional_import(".vanderzee_extractor", ["VanderzeeExtractor"])
+_optional_import(".kuopio_extractor", ["KuopioExtractor"])
+_optional_import(".kuopio_openpose_extractor", ["KuopioOpenPoseExtractor"])
+_optional_import(".hood_amputee_extractor", ["HoodAmputeeExtractor"])
+_optional_import(".elderly_fallrisk_extractor", ["ElderlyFallriskExtractor"])
+_optional_import(".camargo_extractor", ["CamargoExtractor"])
