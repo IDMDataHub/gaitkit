@@ -73,6 +73,13 @@ def _normalize_units(units: Any) -> Dict[str, str]:
     return out
 
 
+def _normalize_method(method: Any) -> str:
+    value = str(method).strip() if method is not None else ""
+    if not value:
+        raise ValueError("'method' must be a non-empty string")
+    return value
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run gaitkit on structured JSON frames.")
     parser.add_argument("--input", required=True, type=Path, help="Input JSON file path.")
@@ -95,7 +102,7 @@ def main() -> int:
     args = parser.parse_args()
 
     payload = _load_payload(args.input)
-    method = args.method or str(payload.get("method", "bayesian_bis"))
+    method = _normalize_method(args.method if args.method is not None else payload.get("method", "bayesian_bis"))
     fps = float(args.fps if args.fps is not None else payload.get("fps", 100.0))
     if fps <= 0:
         raise ValueError("fps must be strictly positive")
