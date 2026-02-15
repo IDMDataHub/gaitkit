@@ -10,7 +10,7 @@ import csv
 import json
 import math
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Mapping, MutableMapping, Sequence
+from typing import Any, Dict, Iterable, List, Mapping, Sequence
 
 from ._core import _dicts_to_angle_frames, detect, list_methods
 
