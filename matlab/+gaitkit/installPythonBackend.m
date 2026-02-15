@@ -11,8 +11,8 @@ if ~(ischar(packageName) || isstring(packageName))
 end
 
 cmd = sprintf('"%s" -m pip install %s', char(pyenv().Executable), char(packageName));
-status = system(cmd);
+[status, cmdout] = system(cmd);
 if status ~= 0
-    error('pip install failed with status %d', status);
+    error('pip install failed with status %d. Output:\n%s', status, cmdout);
 end
 end
