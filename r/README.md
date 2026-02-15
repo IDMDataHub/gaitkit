@@ -13,6 +13,7 @@ devtools::install_local("r")
 # Install Python backend in the active reticulate environment:
 library(gaitkit)
 gk_install_python()
+gk_install_python(package = "gaitkit[all]") # optional extras
 ```
 
 For reproducible setups, pin the Python interpreter before calling gaitkit:
