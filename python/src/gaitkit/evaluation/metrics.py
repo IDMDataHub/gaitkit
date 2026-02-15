@@ -51,6 +51,8 @@ def compute_event_metrics(detected, ground_truth, tolerance_ms, fps,
         When valid_frame_range is not None the dict also includes
         n_detected_in_zone and n_detected_total for diagnostics.
     """
+    if detected is None or ground_truth is None:
+        raise ValueError("detected and ground_truth must be sequences of frame indices")
     if fps is None or fps <= 0:
         raise ValueError("fps must be strictly positive")
     if tolerance_ms is None or tolerance_ms < 0:
