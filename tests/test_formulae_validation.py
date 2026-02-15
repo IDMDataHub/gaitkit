@@ -278,6 +278,13 @@ class TestNativeFormulaValidation(unittest.TestCase):
         self.assertEqual(sci.tolist(), [17, 46])
         self.assertEqual(nat.tolist(), sci.tolist())
 
+    def test_solve_alternating_path_rejects_int_overflow(self):
+        big = 2**40
+        with self.assertRaises(OverflowError):
+            _gait_native.solve_alternating_path(
+                [0.0], [0.0], [big], [0], [0], [0]
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
