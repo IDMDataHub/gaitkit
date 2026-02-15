@@ -82,3 +82,17 @@ test_that("plot.gaitkit_result validates type and supports heel_strike labels", 
   expect_invisible(plot.gaitkit_result(x, type = "events"))
   expect_invisible(plot.gaitkit_result(x, type = "cycles"))
 })
+
+test_that("plot.gaitkit_result validates required event columns", {
+  x <- list(
+    events = data.frame(frame = 1L, stringsAsFactors = FALSE),
+    cycles = data.frame(),
+    method = "bike"
+  )
+  class(x) <- "gaitkit_result"
+
+  expect_error(
+    plot.gaitkit_result(x, type = "events"),
+    "events data must include columns: time, event_type, side"
+  )
+})
