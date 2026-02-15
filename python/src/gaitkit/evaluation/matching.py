@@ -52,8 +52,12 @@ def match_events(detected: List[int], ground_truth: List[int],
     unmatched_gt : list of int
         Ground-truth frames that were not matched (false negatives).
     """
+    if not isinstance(tolerance_frames, int):
+        raise ValueError("tolerance_frames must be an integer >= 0")
     if tolerance_frames < 0:
         raise ValueError("tolerance_frames must be >= 0")
+    if detected is None or ground_truth is None:
+        raise ValueError("detected and ground_truth must be sequences of frame indices")
 
     det_sorted = sorted(detected)
     gt_sorted = sorted(ground_truth)
