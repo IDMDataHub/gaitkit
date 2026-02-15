@@ -239,6 +239,8 @@ def _make_detector(method: str, fps: float):
             det = cls(fps=fps)
             return det
         except Exception as exc:
+            # Native backends are optional and method-specific; any runtime
+            # issue must gracefully fall back to the pure-Python implementation.
             logger.debug("Native detector '%s' unavailable, falling back to Python backend: %s", key, exc)
 
     # Fall back to pure Python
