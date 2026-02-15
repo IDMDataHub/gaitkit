@@ -210,7 +210,11 @@ def _download_deepevent_weights(target_path: Path) -> Optional[Path]:
                 fd, tmp_name = tempfile.mkstemp(prefix="deepevent_", suffix=".h5")
                 tmp_path = Path(tmp_name)
                 with os.fdopen(fd, "wb") as out:
-                    out.write(response.read())
+                    while True:
+                        chunk = response.read(1024 * 1024)
+                        if not chunk:
+                            break
+                        out.write(chunk)
 
             if not _is_hdf5_file(tmp_path):
                 raise RuntimeError("downloaded file is not a valid HDF5 weights file")
