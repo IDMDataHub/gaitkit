@@ -46,7 +46,7 @@ Issues = "https://github.com/fferlab/gaitkit/issues"
 where = ["src"]
 
 [tool.setuptools.package-data]
-gaitkit = ["native/*.c", "native/*.h", "data/*.json", "data/*.onnx"]
+gaitkit = ["native/*.c", "native/*.h", "data/*.json", "data/*.onnx", "data/*.h5"]
 
 [tool.pytest.ini_options]
 testpaths = ["../../tests"]
