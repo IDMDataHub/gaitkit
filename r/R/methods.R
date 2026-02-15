@@ -39,8 +39,11 @@ print.gaitkit_result <- function(x, ...) {
 #' @param ... Ignored.
 #' @export
 summary.gaitkit_result <- function(object, ...) {
+  if (!is.list(object)) {
+    stop("'object' must be a gaitkit_result list", call. = FALSE)
+  }
   print.gaitkit_result(object)
-  if (nrow(object$cycles) > 0) {
+  if (is.data.frame(object$cycles) && nrow(object$cycles) > 0) {
     cat("\nCycles:\n")
     print(object$cycles)
   }
@@ -55,21 +58,28 @@ summary.gaitkit_result <- function(object, ...) {
 #'
 #' @export
 plot.gaitkit_result <- function(x, type = "events", ...) {
+  if (!is.list(x)) {
+    stop("'x' must be a gaitkit_result list", call. = FALSE)
+  }
+  if (!is.character(type) || length(type) != 1L || !(type %in% c("events", "cycles"))) {
+    stop("'type' must be either 'events' or 'cycles'", call. = FALSE)
+  }
   events <- x$events
-  if (nrow(events) == 0) {
+  if (!is.data.frame(events) || nrow(events) == 0) {
     message("No events to plot.")
     return(invisible(NULL))
   }
 
   if (type == "events") {
-    hs <- events[events$event_type == "HS", ]
-    to <- events[events$event_type == "TO", ]
+    et <- tolower(as.character(events$event_type))
+    hs <- events[et %in% c("hs", "heel_strike"), , drop = FALSE]
+    to <- events[et %in% c("to", "toe_off"), , drop = FALSE]
 
     xlim <- range(events$time)
     ylim <- c(-0.5, 1.5)
 
     plot(xlim, ylim, type = "n", xlab = "Time (s)", ylab = "",
-         main = paste("Gait Events \u2014", x$method), yaxt = "n", ...)
+         main = paste("Gait Events -", x$method), yaxt = "n", ...)
     axis(2, at = c(0, 1), labels = c("TO", "HS"), las = 1)
 
     # HS markers
@@ -103,15 +113,22 @@ plot.gaitkit_result <- function(x, type = "events", ...) {
 
   } else if (type == "cycles") {
     cycles <- x$cycles
-    if (nrow(cycles) == 0) {
+    if (!is.data.frame(cycles) || nrow(cycles) == 0) {
       message("No cycles to plot.")
       return(invisible(NULL))
     }
+    stance_col <- if ("stance_pct" %in% names(cycles)) "stance_pct" else
+      if ("stance_percentage" %in% names(cycles)) "stance_percentage" else NULL
+    swing_col <- if ("swing_pct" %in% names(cycles)) "swing_pct" else
+      if ("swing_percentage" %in% names(cycles)) "swing_percentage" else NULL
+    if (is.null(stance_col) || is.null(swing_col)) {
+      stop("cycles data must include stance/swing percentage columns", call. = FALSE)
+    }
     barplot(
-      rbind(cycles$stance_pct, cycles$swing_pct),
+      rbind(cycles[[stance_col]], cycles[[swing_col]]),
       beside = FALSE, col = c("#2166ac", "#fee08b"),
       names.arg = paste(cycles$side, seq_len(nrow(cycles))),
-      main = paste("Gait Cycles \u2014", x$method),
+      main = paste("Gait Cycles -", x$method),
       ylab = "% of cycle",
       legend.text = c("Stance", "Swing"),
       args.legend = list(x = "topright")
