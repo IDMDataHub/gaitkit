@@ -94,8 +94,15 @@ class IntellEventDetector:
             raise ImportError("onnxruntime is required for IntellEventDetector")
 
         if models_dir is None:
-            project_root = Path(__file__).parent.parent.parent
-            models_dir = project_root / 'models'
+            # Search: 1) bundled in gaitkit/data/  2) legacy models/ dir
+            _data_dir = Path(__file__).parent.parent / 'data'
+            _legacy_dir = Path(__file__).parent.parent.parent / 'models'
+            if (_data_dir / 'ic_intellevent.onnx').exists():
+                models_dir = _data_dir
+            elif (_legacy_dir / 'ic_intellevent.onnx').exists():
+                models_dir = _legacy_dir
+            else:
+                models_dir = _data_dir  # will raise below
         else:
             models_dir = Path(models_dir)
 
@@ -103,7 +110,9 @@ class IntellEventDetector:
         fo_path = models_dir / 'fo_intellevent.onnx'
 
         if not ic_path.exists() or not fo_path.exists():
-            raise FileNotFoundError(f"IntellEvent models not found in {models_dir}")
+            raise FileNotFoundError(
+                f"IntellEvent ONNX models not found in {models_dir}. "
+                "Install with: pip install gaitkit[onnx]")
 
         self.ic_session = ort.InferenceSession(str(ic_path))
         self.fo_session = ort.InferenceSession(str(fo_path))

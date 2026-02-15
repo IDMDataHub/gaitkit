@@ -1,0 +1,85 @@
+---
+title: "Getting Started with gaitkit"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting Started with gaitkit}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+## Installation
+
+```r
+# install.packages("remotes")
+remotes::install_github("fferlab/gaitkit", subdir = "r")
+```
+
+## Quick start
+
+```r
+library(gaitkit)
+
+# Load a bundled example trial (healthy adult, overground walking)
+trial <- gk_load_example("healthy")
+cat(trial$description, "\n")
+
+# Detect gait events with BIKE (default)
+result <- gk_detect(trial)
+print(result)
+```
+
+## Available methods
+
+```r
+gk_methods()
+# "bike" "zeni" "oconnor" "hreljac" "mickelborough"
+# "ghoussayni" "vancanneyt" "dgei" "intellevent" "deepevent"
+```
+
+## Ensemble detection
+
+Combine multiple methods via temporal clustering and majority vote:
+
+```r
+result <- gk_detect_ensemble(
+  trial,
+  methods = c("bike", "zeni", "oconnor"),
+  min_votes = 2
+)
+print(result)
+```
+
+## Visualisation
+
+```r
+# Timeline with HS/TO markers
+plot(result)
+
+# Gait cycle bar chart
+plot(result, type = "cycles")
+```
+
+## Accessing results
+
+```r
+# Events data.frame
+result$events
+
+# Gait cycles
+result$cycles
+
+# Individual event lists
+result$left_hs
+result$right_to
+```
+
+## Example datasets
+
+```r
+gk_list_examples()
+# "healthy" "parkinson" "kuopio" "stroke"
+
+pd_trial <- gk_load_example("parkinson")
+pd_result <- gk_detect(pd_trial, method = "bike")
+summary(pd_result)
+```

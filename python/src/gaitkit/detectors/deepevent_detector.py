@@ -216,6 +216,7 @@ def _build_deepevent_model(weights_path: Optional[str] = None):
 
     # Try loading from the original JSON first (works with tf_keras)
     json_paths = [
+            Path(__file__).parent.parent / 'data' / 'DeepEventModel.json',
         Path(__file__).parent.parent.parent.parent / 'gait_benchmark_project' / 'deepevent' / 'deepevent' / 'data' / 'DeepEventModel.json',
         Path.home() / 'gait_benchmark_project' / 'deepevent' / 'deepevent' / 'data' / 'DeepEventModel.json',
     ]
@@ -269,6 +270,9 @@ def _build_deepevent_model(weights_path: Optional[str] = None):
     if not weights_loaded:
         # Search standard locations for the weights file
         weight_paths = [
+            # Bundled in gaitkit package
+            Path(__file__).parent.parent / 'data' / 'DeepEventWeight.h5',
+            # Legacy locations
             Path(__file__).parent.parent.parent.parent / 'gait_benchmark_project' / 'deepevent' / 'deepevent' / 'data' / 'DeepEventWeight.h5',
             Path.home() / 'gait_benchmark_project' / 'deepevent' / 'deepevent' / 'data' / 'DeepEventWeight.h5',
         ]
