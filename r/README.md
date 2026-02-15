@@ -15,6 +15,15 @@ library(gaitkit)
 gk_install_python()
 ```
 
+For reproducible setups, pin the Python interpreter before calling gaitkit:
+
+```r
+reticulate::use_python("/path/to/python", required = TRUE)
+```
+
+In non-interactive sessions (CI, Rscript), exporting `RETICULATE_PYTHON`
+before starting R is the most reliable option.
+
 ## Usage
 
 ```r
