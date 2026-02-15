@@ -1,0 +1,144 @@
+---
+title: "gaitkit C3D benchmark test suite"
+output: html_document
+---
+
+# Expected scores on bundled C3D examples
+
+Six C3D files are bundled in `python/src/gaitkit/data/c3d/` for regression
+testing. Each file was selected from the BIKE benchmark because BIKE
+substantially outperforms all competing methods on it.
+
+Tolerance: **50 ms**.  Detector identifier in gaitkit: `"bike"`.
+
+## Healthy files
+
+| File | Dataset | Population | fps | n_gt_HS | n_gt_TO | BIKE HS F1 | BIKE TO F1 | Best competitor HS F1 |
+|------|---------|-----------|-----|---------|---------|-----------|-----------|----------------------|
+| `vanderzee_p10_trial3.c3d` | Van der Zee | Healthy, split-belt TM | 120 | 117 | 118 | **0.872** | **0.991** | 0.596 (Mickelborough) |
+| `fukuchi_WBDS42walkT03.c3d` | Fukuchi | Healthy older adult, TM | 150 | 46 | 46 | **0.913** | **0.891** | 0.522 (Zeni) |
+| `fukuchi_WBDS19walkT01.c3d` | Fukuchi | Healthy young adult, TM | 150 | 31 | 31 | **0.968** | **0.774** | 0.825 (Zeni) |
+
+## Pathological files (Parkinson's disease, OFF medication)
+
+| File | Dataset | Subject | fps | n_gt_HS | n_gt_TO | BIKE HS F1 | BIKE TO F1 | Best competitor HS F1 |
+|------|---------|---------|-----|---------|---------|-----------|-----------|----------------------|
+| `figshare_pd_SUB07_off_walk_7.c3d` | Figshare PD | SUB07 OFF | 150 | 28 | 29 | **0.857** | **0.793** | 0.714 (Vancanneyt) |
+| `figshare_pd_SUB01_off_walk_12b.c3d` | Figshare PD | SUB01 OFF | 150 | 12 | 12 | **0.957** | **1.000** | 0.833 (Zeni) |
+| `figshare_pd_SUB05_off_walk_8.c3d` | Figshare PD | SUB05 OFF | 150 | 19 | 18 | **1.000** | **0.833** | 0.947 (Zeni) |
+
+## All detectors comparison (50 ms tolerance)
+
+### vanderzee_p10_trial3.c3d (117 HS, 118 TO, 120 Hz)
+
+| Detector | HS F1 | TO F1 |
+|----------|-------|-------|
+| **BIKE** | **0.872** | **0.991** |
+| Zeni | 0.547 | 0.992 |
+| IntellEvent | 0.412 | 0.966 |
+| Mickelborough | 0.596 | 0.028 |
+| Ghoussayni | 0.501 | 0.222 |
+| Hreljac | 0.442 | 0.025 |
+| O'Connor | 0.286 | 0.262 |
+| DGEI | 0.009 | 0.153 |
+| Vancanneyt | 0.000 | 0.000 |
+| DeepEvent | 0.000 | 0.000 |
+
+### fukuchi_WBDS42walkT03.c3d (46 HS, 46 TO, 150 Hz)
+
+| Detector | HS F1 | TO F1 |
+|----------|-------|-------|
+| **BIKE** | **0.913** | **0.891** |
+| Zeni | 0.522 | 1.000 |
+| IntellEvent | 0.494 | 0.149 |
+| Mickelborough | 0.413 | 0.264 |
+| Ghoussayni | 0.392 | 0.181 |
+| O'Connor | 0.367 | 0.228 |
+| Hreljac | 0.333 | 0.228 |
+| DGEI | 0.198 | 0.000 |
+| Vancanneyt | 0.000 | 0.000 |
+| DeepEvent | 0.000 | 0.000 |
+
+### fukuchi_WBDS19walkT01.c3d (31 HS, 31 TO, 150 Hz)
+
+| Detector | HS F1 | TO F1 |
+|----------|-------|-------|
+| **BIKE** | **0.968** | **0.774** |
+| Zeni | 0.825 | 0.290 |
+| Mickelborough | 0.261 | 0.167 |
+| Ghoussayni | 0.254 | 0.195 |
+| DGEI | 0.243 | 0.000 |
+| Hreljac | 0.202 | 0.140 |
+| IntellEvent | 0.179 | 0.100 |
+| O'Connor | 0.172 | 0.151 |
+| Vancanneyt | 0.000 | 0.000 |
+| DeepEvent | 0.000 | 0.000 |
+
+### figshare_pd_SUB07_off_walk_7.c3d (28 HS, 29 TO, 150 Hz)
+
+| Detector | HS F1 | TO F1 |
+|----------|-------|-------|
+| **BIKE** | **0.857** | **0.793** |
+| Vancanneyt | 0.714 | 0.000 |
+| Zeni | 0.536 | 0.069 |
+| Hreljac | 0.460 | 0.187 |
+| Mickelborough | 0.421 | 0.140 |
+| Ghoussayni | 0.237 | 0.358 |
+| IntellEvent | 0.212 | 0.329 |
+| O'Connor | 0.185 | 0.077 |
+| DGEI | 0.151 | 0.204 |
+| DeepEvent | 0.000 | 0.000 |
+
+### figshare_pd_SUB01_off_walk_12b.c3d (12 HS, 12 TO, 150 Hz)
+
+| Detector | HS F1 | TO F1 |
+|----------|-------|-------|
+| **BIKE** | **0.957** | **1.000** |
+| Zeni | 0.833 | 0.320 |
+| Vancanneyt | 0.737 | 0.353 |
+| IntellEvent | 0.538 | 0.783 |
+| O'Connor | 0.378 | 0.387 |
+| Hreljac | 0.324 | 0.222 |
+| Mickelborough | 0.276 | 0.118 |
+| Ghoussayni | 0.211 | 0.103 |
+| DGEI | 0.167 | 0.308 |
+| DeepEvent | 0.000 | 0.000 |
+
+### figshare_pd_SUB05_off_walk_8.c3d (19 HS, 18 TO, 150 Hz)
+
+| Detector | HS F1 | TO F1 |
+|----------|-------|-------|
+| **BIKE** | **1.000** | **0.833** |
+| Zeni | 0.947 | 0.167 |
+| Vancanneyt | 0.889 | 0.424 |
+| IntellEvent | 0.500 | 0.273 |
+| Mickelborough | 0.375 | 0.095 |
+| Ghoussayni | 0.377 | 0.160 |
+| Hreljac | 0.286 | 0.297 |
+| O'Connor | 0.185 | 0.080 |
+| DGEI | 0.054 | 0.514 |
+| DeepEvent | 0.000 | 0.000 |
+
+## Regression thresholds
+
+For CI/CD testing, the following minimum thresholds should hold for BIKE at
+50 ms tolerance. A regression is flagged if any score drops below the
+threshold (set at original score minus 0.05 margin).
+
+```
+vanderzee_p10_trial3        HS >= 0.82   TO >= 0.94
+fukuchi_WBDS42walkT03       HS >= 0.86   TO >= 0.84
+fukuchi_WBDS19walkT01       HS >= 0.92   TO >= 0.72
+figshare_pd_SUB07_off_walk_7      HS >= 0.81   TO >= 0.74
+figshare_pd_SUB01_off_walk_12b    HS >= 0.91   TO >= 0.95
+figshare_pd_SUB05_off_walk_8      HS >= 0.95   TO >= 0.78
+```
+
+## Data provenance
+
+- **Van der Zee**: van der Zee et al. (2022), split-belt treadmill, 120 Hz, force-plate GT.
+  DOI: 10.1038/s41597-022-01507-6. License: CC-BY 4.0.
+- **Fukuchi**: Fukuchi et al. (2018), treadmill + overground, 150 Hz, gait cycle % GT.
+  DOI: 10.7717/peerj.5764. License: CC-BY 4.0.
+- **Figshare PD**: Shida et al. (2023), Parkinson ON/OFF, overground, 150 Hz, force-plate GT.
+  DOI: 10.6084/m9.figshare.22491710. License: CC-BY 4.0.
