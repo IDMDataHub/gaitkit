@@ -208,6 +208,19 @@ def _event_time(event) -> float:
     return event.time
 
 
+def _normalize_methods(methods: Sequence[str]) -> List[str]:
+    """Normalize method aliases and deduplicate while preserving order."""
+    out: List[str] = []
+    seen = set()
+    for method in methods:
+        key = _METHOD_ALIASES.get(str(method).lower().strip(), str(method).lower().strip())
+        if key in seen:
+            continue
+        out.append(key)
+        seen.add(key)
+    return out
+
+
 def _weighted_median(values: np.ndarray, weights: np.ndarray) -> float:
     """Compute the weighted median of a set of values.
 
@@ -422,12 +435,18 @@ def detect_ensemble(
         raise ValueError("data (angle_frames) is required")
     if fps is None:
         fps = 100.0
+    if fps <= 0:
+        raise ValueError("fps must be strictly positive")
+    if min_votes < 1:
+        raise ValueError("min_votes must be >= 1")
+    if tolerance_ms < 0:
+        raise ValueError("tolerance_ms must be >= 0")
 
     # Resolve methods
     if methods is None:
         methods = [m for m in DEFAULT_METHODS if m in DETECTOR_REGISTRY]
     else:
-        methods = [_METHOD_ALIASES.get(str(m).lower().strip(), str(m).lower().strip()) for m in methods]
+        methods = _normalize_methods(methods)
         for m in methods:
             if m not in DETECTOR_REGISTRY:
                 available = ", ".join(sorted(DETECTOR_REGISTRY.keys()))
@@ -456,6 +475,7 @@ def detect_ensemble(
     to_left_by_method: Dict[str, List[int]] = {}
     to_right_by_method: Dict[str, List[int]] = {}
     per_method_results: Dict[str, Any] = {}
+    methods_failed: Dict[str, str] = {}
 
     for method_name in methods:
         try:
@@ -490,6 +510,7 @@ def detect_ensemble(
             )
         except Exception as exc:
             logger.warning("Detector '%s' failed: %s", method_name, exc)
+            methods_failed[method_name] = str(exc)
             # Remove from pools so it does not affect voter count
             continue
 
@@ -510,6 +531,7 @@ def detect_ensemble(
             metadata={
                 "methods_requested": list(methods),
                 "methods_succeeded": successful_methods,
+                "methods_failed": methods_failed,
                 "min_votes": min_votes,
                 "tolerance_ms": tolerance_ms,
             },
@@ -564,6 +586,7 @@ def detect_ensemble(
         metadata={
             "methods_requested": list(methods),
             "methods_succeeded": successful_methods,
+            "methods_failed": methods_failed,
             "min_votes": min_votes,
             "tolerance_ms": tolerance_ms,
             "tolerance_frames": tolerance_frames,
