@@ -11,6 +11,14 @@ test_that("gk_detect validates method and fps before Python bridge", {
     gk_detect(list(angle_frames = list(), fps = 100), method = "bike", fps = 0),
     "'fps' must be a positive numeric scalar"
   )
+  expect_error(
+    gk_detect("", method = "bike"),
+    "'data' must be a list or a file path"
+  )
+  expect_error(
+    gk_detect(list(foo = 1), method = "bike"),
+    "'data' list should contain at least 'angle_frames' or 'fps' fields"
+  )
 })
 
 test_that("gk_detect_ensemble validates numeric controls before Python bridge", {
@@ -30,5 +38,13 @@ test_that("gk_detect_ensemble validates numeric controls before Python bridge", 
   expect_error(
     gk_detect_ensemble(dummy, methods = c("bike", "zeni"), fps = 0),
     "'fps' must be a positive numeric scalar"
+  )
+  expect_error(
+    gk_detect_ensemble("", methods = c("bike", "zeni")),
+    "'data' must be a list or a file path"
+  )
+  expect_error(
+    gk_detect_ensemble(list(foo = 1), methods = c("bike", "zeni")),
+    "'data' list should contain at least 'angle_frames' or 'fps' fields"
   )
 })
