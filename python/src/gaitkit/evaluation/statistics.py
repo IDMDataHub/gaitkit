@@ -38,6 +38,12 @@ def bootstrap_confidence_interval(values: np.ndarray, n_bootstrap: int = 10000,
     """
     values = np.asarray(values)
     values = values[np.isfinite(values)]
+    if n_bootstrap < 1:
+        raise ValueError("n_bootstrap must be >= 1")
+    if not (0.0 < confidence < 1.0):
+        raise ValueError("confidence must be in the open interval (0, 1)")
+    if statistic not in {"mean", "median"}:
+        raise ValueError("statistic must be 'mean' or 'median'")
     if len(values) == 0:
         return np.nan, np.nan, np.nan
 
@@ -76,6 +82,8 @@ def wilcoxon_signed_rank(values_a: np.ndarray, values_b: np.ndarray,
     """
     a = np.asarray(values_a)
     b = np.asarray(values_b)
+    if alternative not in {"two-sided", "greater", "less"}:
+        raise ValueError("alternative must be 'two-sided', 'greater', or 'less'")
     mask = np.isfinite(a) & np.isfinite(b)
     a, b = a[mask], b[mask]
     if len(a) < 5:
