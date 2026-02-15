@@ -21,8 +21,11 @@ This document tracks the pre-publication release flow for `gaitkit`.
 
 ## Before public PyPI/CRAN submission
 
-1. Mint a software DOI (recommended: Zenodo + GitHub release integration).
-2. Add DOI in:
+1. Ensure the project URL used in package metadata is publicly reachable.
+   - If the repository is private, publish a public mirror or make it public
+     before CRAN/PyPI submission (URL checks will fail otherwise).
+2. Mint a software DOI (recommended: Zenodo + GitHub release integration).
+3. Add DOI in:
    - `CITATION.cff`
    - `README.md` citation section
-3. Keep BIKE as software citation unless/until journal publication is public.
+4. Keep BIKE as software citation unless/until journal publication is public.
