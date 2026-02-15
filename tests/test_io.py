@@ -5,6 +5,7 @@ from __future__ import annotations
 import sys
 import types
 import unittest
+import tempfile
 from pathlib import Path
 from unittest import mock
 
@@ -17,6 +18,18 @@ from gaitkit import _io
 
 
 class TestLoadC3D(unittest.TestCase):
+    def test_load_example_name_must_be_non_empty_string(self):
+        with self.assertRaises(ValueError):
+            _io.load_example("")
+        with self.assertRaises(ValueError):
+            _io.load_example(None)  # type: ignore[arg-type]
+
+    def test_load_c3d_rejects_missing_or_invalid_path_before_import(self):
+        with self.assertRaises(ValueError):
+            _io.load_c3d("not_a_c3d.txt")
+        with self.assertRaises(FileNotFoundError):
+            _io.load_c3d("missing_file.c3d")
+
     def test_invalid_marker_set_raises(self):
         fake_ezc3d = types.SimpleNamespace(
             c3d=lambda _path: {
@@ -25,9 +38,12 @@ class TestLoadC3D(unittest.TestCase):
                 "parameters": {"POINT": {"LABELS": {"value": ["LHEE"]}}},
             }
         )
-        with mock.patch.dict(sys.modules, {"ezc3d": fake_ezc3d}):
-            with self.assertRaises(ValueError):
-                _io.load_c3d("dummy.c3d", marker_set="unknown")
+        with tempfile.TemporaryDirectory() as tmp:
+            c3d_path = Path(tmp) / "dummy.c3d"
+            c3d_path.write_bytes(b"")
+            with mock.patch.dict(sys.modules, {"ezc3d": fake_ezc3d}):
+                with self.assertRaises(ValueError):
+                    _io.load_c3d(str(c3d_path), marker_set="unknown")
 
     def test_angle_extraction_failure_is_non_blocking(self):
         # Include an angle label that does not exist in points data to force IndexError
@@ -42,9 +58,12 @@ class TestLoadC3D(unittest.TestCase):
             }
         )
 
-        with mock.patch.dict(sys.modules, {"ezc3d": fake_ezc3d}):
-            with mock.patch.object(_io.logger, "debug") as debug_mock:
-                out = _io.load_c3d("dummy.c3d", marker_set="pig")
+        with tempfile.TemporaryDirectory() as tmp:
+            c3d_path = Path(tmp) / "dummy.c3d"
+            c3d_path.write_bytes(b"")
+            with mock.patch.dict(sys.modules, {"ezc3d": fake_ezc3d}):
+                with mock.patch.object(_io.logger, "debug") as debug_mock:
+                    out = _io.load_c3d(str(c3d_path), marker_set="pig")
         self.assertEqual(out["n_frames"], 2)
         self.assertEqual(len(out["angle_frames"]), 2)
         self.assertTrue(debug_mock.called)
