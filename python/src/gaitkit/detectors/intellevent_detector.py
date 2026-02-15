@@ -34,7 +34,7 @@ This version matches the original IntellEvent v2.0 source code exactly:
 
 Author: Frederic Fer (f.fer@institut-myologie.org)
 Affiliation: Myodata, Institut de Myologie, Paris, France
-License: Apache-2.0
+License: MIT
 """
 
 import numpy as np

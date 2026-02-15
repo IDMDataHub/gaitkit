@@ -13,7 +13,7 @@ especially in pathological gait (PD, stroke).
 
 Author: Frederic Fer (f.fer@institut-myologie.org)
 Affiliation: Myodata, Institut de Myologie, Paris, France
-License: Apache-2.0
+License: MIT
 """
 
 import numpy as np
