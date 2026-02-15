@@ -44,6 +44,15 @@ gk_methods <- function() {
 #'
 #' @export
 gk_detect <- function(data, method = "bike", fps = NULL) {
+  if (!is.character(method) || length(method) != 1L || !nzchar(method)) {
+    stop("'method' must be a non-empty character scalar", call. = FALSE)
+  }
+  if (!is.null(fps)) {
+    if (!is.numeric(fps) || length(fps) != 1L || is.na(fps) || fps <= 0) {
+      stop("'fps' must be a positive numeric scalar", call. = FALSE)
+    }
+  }
+
   gk <- .gk_module()
 
   if (is.character(data) && length(data) == 1L) {
@@ -85,6 +94,23 @@ gk_detect <- function(data, method = "bike", fps = NULL) {
 #' @export
 gk_detect_ensemble <- function(data, methods = NULL, min_votes = 2L,
                                tolerance_ms = 50, fps = NULL) {
+  if (!is.null(methods)) {
+    if (!is.character(methods) || length(methods) < 2L) {
+      stop("'methods' must be a character vector with at least two methods", call. = FALSE)
+    }
+  }
+  if (!is.numeric(min_votes) || length(min_votes) != 1L || is.na(min_votes) || min_votes < 1) {
+    stop("'min_votes' must be an integer >= 1", call. = FALSE)
+  }
+  if (!is.numeric(tolerance_ms) || length(tolerance_ms) != 1L || is.na(tolerance_ms) || tolerance_ms < 0) {
+    stop("'tolerance_ms' must be a numeric value >= 0", call. = FALSE)
+  }
+  if (!is.null(fps)) {
+    if (!is.numeric(fps) || length(fps) != 1L || is.na(fps) || fps <= 0) {
+      stop("'fps' must be a positive numeric scalar", call. = FALSE)
+    }
+  }
+
   gk <- .gk_module()
 
   if (is.character(data) && length(data) == 1L) {
