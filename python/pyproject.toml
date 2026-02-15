@@ -38,10 +38,10 @@ all = ["gaitkit[onnx,viz,c3d]"]
 gaitkit-detect = "gaitkit.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/fferlab/gaitkit"
-Documentation = "https://github.com/fferlab/gaitkit#readme"
-Repository = "https://github.com/fferlab/gaitkit"
-Issues = "https://github.com/fferlab/gaitkit/issues"
+Homepage = "https://github.com/IDMDataHub/gaitkit"
+Documentation = "https://github.com/IDMDataHub/gaitkit#readme"
+Repository = "https://github.com/IDMDataHub/gaitkit"
+Issues = "https://github.com/IDMDataHub/gaitkit/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
