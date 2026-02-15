@@ -11,24 +11,16 @@ from scipy.ndimage import gaussian_filter1d
 try:
     from gaitkit.native import _gait_native as _native_solver
     _HAS_NATIVE = True
-except Exception:
+except ImportError:
     _native_solver = None
     _HAS_NATIVE = False
 
-try:
-    from gaitkit.detectors.ghoussayni_detector import (
-        GhoussayniDetector,
-        GaitEvent,
-        _build_cycles,
-    )
-    from gaitkit.detectors.axis_utils import detect_axes
-except Exception:
-    from gaitkit.detectors.ghoussayni_detector import (
-        GhoussayniDetector,
-        GaitEvent,
-        _build_cycles,
-    )
-    from gaitkit.detectors.axis_utils import detect_axes
+from gaitkit.detectors.ghoussayni_detector import (
+    GhoussayniDetector,
+    GaitEvent,
+    _build_cycles,
+)
+from gaitkit.detectors.axis_utils import detect_axes
 
 
 class GhoussayniNativeDetector(GhoussayniDetector):
