@@ -53,11 +53,15 @@ gk_detect <- function(data, method = "bike", fps = NULL) {
     }
   }
 
-  gk <- .gk_module()
-
-  if (is.character(data) && length(data) == 1L) {
+  if (is.character(data) && length(data) == 1L && nzchar(data)) {
     py_data <- data
   } else if (is.list(data)) {
+    if (!("angle_frames" %in% names(data)) && !("fps" %in% names(data))) {
+      stop(
+        "'data' list should contain at least 'angle_frames' or 'fps' fields",
+        call. = FALSE
+      )
+    }
     py_json <- reticulate::import("json", convert = FALSE)
     data_json <- jsonlite::toJSON(data, auto_unbox = TRUE, null = "null",
                                   digits = 6)
@@ -65,6 +69,8 @@ gk_detect <- function(data, method = "bike", fps = NULL) {
   } else {
     stop("'data' must be a list or a file path", call. = FALSE)
   }
+
+  gk <- .gk_module()
 
   kwargs <- list(data = py_data, method = method)
   if (!is.null(fps)) kwargs$fps <- as.numeric(fps)
@@ -111,11 +117,15 @@ gk_detect_ensemble <- function(data, methods = NULL, min_votes = 2L,
     }
   }
 
-  gk <- .gk_module()
-
-  if (is.character(data) && length(data) == 1L) {
+  if (is.character(data) && length(data) == 1L && nzchar(data)) {
     py_data <- data
   } else if (is.list(data)) {
+    if (!("angle_frames" %in% names(data)) && !("fps" %in% names(data))) {
+      stop(
+        "'data' list should contain at least 'angle_frames' or 'fps' fields",
+        call. = FALSE
+      )
+    }
     py_json <- reticulate::import("json", convert = FALSE)
     data_json <- jsonlite::toJSON(data, auto_unbox = TRUE, null = "null",
                                   digits = 6)
@@ -123,6 +133,8 @@ gk_detect_ensemble <- function(data, methods = NULL, min_votes = 2L,
   } else {
     stop("'data' must be a list or a file path", call. = FALSE)
   }
+
+  gk <- .gk_module()
 
   kwargs <- list(data = py_data, min_votes = as.integer(min_votes),
                  tolerance_ms = as.numeric(tolerance_ms))
