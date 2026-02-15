@@ -42,6 +42,10 @@ class TestVizValidation(unittest.TestCase):
                 _viz.plot_result(_DummyResult(fps=0, n_frames=10))
             with self.assertRaises(ValueError):
                 _viz.plot_result(_DummyResult(fps=100, n_frames=0))
+            with self.assertRaises(ValueError):
+                _viz.plot_result(_DummyResult(), signals=[])
+            with self.assertRaises(ValueError):
+                _viz.plot_result(_DummyResult(), signals=["left_knee_angle", ""])
 
     def test_plot_cycles_requires_non_empty_variable_and_frames(self):
         with mock.patch.object(_viz, "_import_mpl", side_effect=AssertionError("should not import")):
