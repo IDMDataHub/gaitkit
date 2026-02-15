@@ -95,7 +95,7 @@ events$left_hs
 
 | # | Method | Type | Reference |
 |---|--------|------|-----------|
-| 1 | **BIKE** | Bayesian + kinematic | Fer et al. (2026) |
+| 1 | **BIKE** | Bayesian + kinematic | This software (gaitkit) |
 | 2 | Zeni | Kinematic (AP coord) | Zeni et al. (2008) |
 | 3 | O'Connor | Kinematic (velocity) | O'Connor et al. (2007) |
 | 4 | Hreljac | Kinematic (acceleration) | Hreljac & Marshall (2000) |
@@ -122,15 +122,15 @@ events$left_hs
 
 ## Citation
 
-If you use gaitkit in your research, please cite:
+If you use gaitkit in your research, please cite the software release:
 
 ```bibtex
-@article{fer2026gaitkit,
-  title   = {gaitkit: A universal toolkit for gait event detection
-             from motion capture data},
+@software{fer2026gaitkit,
   author  = {Fer, Fr{\'e}d{\'e}ric},
-  journal = {Journal of NeuroEngineering and Rehabilitation},
-  year    = {2026}
+  title   = {gaitkit},
+  version = {0.1.0},
+  year    = {2026},
+  url     = {https://github.com/IDMDataHub/gaitkit}
 }
 ```
 
