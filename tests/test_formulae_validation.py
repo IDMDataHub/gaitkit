@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import math
+import sys
 import unittest
 
 import numpy as np
 from scipy.signal import find_peaks
 
-from recode.native import _gait_native
+sys.path.insert(0, "/home/ffer/gaitkit/python/src")
+
+from gaitkit.native import _gait_native
 
 
 def _solve_alternating_reference(score0, score1, fl0, fr0, fl1, fr1):
@@ -276,4 +279,3 @@ class TestNativeFormulaValidation(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

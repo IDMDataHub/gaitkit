@@ -1,0 +1,34 @@
+{
+  "healthy": {
+    "fps": 150.0,
+    "n_frames": 374,
+    "left_hs": [0, 161, 325],
+    "right_hs": [82, 244],
+    "left_to": [101, 262],
+    "right_to": [21, 182, 347]
+  },
+  "parkinson": {
+    "fps": 150.0,
+    "n_frames": 671,
+    "left_hs": [0, 201, 398, 592],
+    "right_hs": [104, 306, 496],
+    "left_to": [135, 332, 518],
+    "right_to": [22, 239, 433, 625]
+  },
+  "kuopio": {
+    "fps": 100.0,
+    "n_frames": 300,
+    "left_hs": [],
+    "right_hs": [],
+    "left_to": [],
+    "right_to": []
+  },
+  "stroke": {
+    "fps": 100.0,
+    "n_frames": 294,
+    "left_hs": [64, 164, 266],
+    "right_hs": [13, 112, 213],
+    "left_to": [28, 127, 229],
+    "right_to": [76, 177, 279]
+  }
+}
