@@ -446,6 +446,8 @@ def detect_ensemble(
     if methods is None:
         methods = [m for m in DEFAULT_METHODS if m in DETECTOR_REGISTRY]
     else:
+        if isinstance(methods, (str, bytes)):
+            raise ValueError("methods must be a sequence of method names, not a single string")
         methods = _normalize_methods(methods)
         for m in methods:
             if m not in DETECTOR_REGISTRY:
@@ -465,6 +467,12 @@ def detect_ensemble(
         weight_dict = {m: BENCHMARK_WEIGHTS.get(m, 0.5) for m in methods}
     elif isinstance(weights, dict):
         weight_dict = {m: weights.get(m, 1.0) for m in methods}
+        for method_name, value in weight_dict.items():
+            if not isinstance(value, (int, float)) or not np.isfinite(value) or value < 0:
+                raise ValueError(
+                    f"Invalid weight for method '{method_name}': {value!r}. "
+                    "Weights must be finite numbers >= 0."
+                )
 
     tolerance_frames = max(1, int(round(tolerance_ms * fps / 1000.0)))
 
