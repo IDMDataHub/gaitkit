@@ -251,7 +251,8 @@ class NatureC3DExtractor(BaseExtractor):
             # Try to get contexts (may not exist)
             try:
                 event_contexts = c3d_data['parameters']['EVENT']['CONTEXTS']['value']
-            except:
+            except Exception as exc:
+                logger.debug("No EVENT CONTEXTS available: %s", exc)
                 event_contexts = [''] * len(event_labels)
 
             for i, label in enumerate(event_labels):
@@ -283,8 +284,8 @@ class NatureC3DExtractor(BaseExtractor):
                 elif 'OFF' in label_upper or 'TO' in label_upper:
                     events[f'to_{side}'].append(frame)
 
-        except Exception as e:
-            pass  # No events in this file
+        except Exception as exc:
+            logger.debug("No readable C3D EVENT entries: %s", exc)
 
         # Sort events
         for key in events:
