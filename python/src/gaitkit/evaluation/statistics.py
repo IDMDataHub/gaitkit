@@ -112,6 +112,13 @@ def compute_summary_table(df: pd.DataFrame,
     """
     if group_cols is None:
         group_cols = ["dataset", "detector_name"]
+    if not isinstance(df, pd.DataFrame):
+        raise ValueError("df must be a pandas DataFrame")
+    if not isinstance(group_cols, list) or not group_cols:
+        raise ValueError("group_cols must be a non-empty list of column names")
+    missing_group = [c for c in group_cols if c not in df.columns]
+    if missing_group:
+        raise ValueError(f"group_cols contain missing columns: {missing_group}")
 
     agg_dict = {
         "hs_precision": "mean",
