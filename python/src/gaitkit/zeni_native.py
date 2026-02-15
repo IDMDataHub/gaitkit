@@ -11,24 +11,16 @@ from scipy.ndimage import gaussian_filter1d
 try:
     from gaitkit.native import _gait_native as _native_solver
     _HAS_NATIVE = True
-except Exception:
+except ImportError:
     _native_solver = None
     _HAS_NATIVE = False
 
-try:
-    from gaitkit.detectors.zeni_detector import (
-        ZeniDetector,
-        GaitEvent,
-        _build_cycles,
-    )
-    from gaitkit.detectors.axis_utils import detect_axes, detect_walking_direction
-except Exception:
-    from gaitkit.detectors.zeni_detector import (
-        ZeniDetector,
-        GaitEvent,
-        _build_cycles,
-    )
-    from gaitkit.detectors.axis_utils import detect_axes, detect_walking_direction
+from gaitkit.detectors.zeni_detector import (
+    ZeniDetector,
+    GaitEvent,
+    _build_cycles,
+)
+from gaitkit.detectors.axis_utils import detect_axes, detect_walking_direction
 
 
 class ZeniNativeDetector(ZeniDetector):
