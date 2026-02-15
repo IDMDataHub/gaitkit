@@ -94,15 +94,17 @@ def load_c3d(path: str, marker_set: str = "auto") -> dict:
     Raises
     ------
     ImportError
-        If ezc3d is not installed.  Install with pip install gaitkit[c3d]``.
+        If ezc3d is not installed. Install with ``pip install gaitkit[c3d]``.
     """
+    if not isinstance(path, (str, Path)) or not str(path).strip():
+        raise ValueError("path must be a non-empty string or Path")
     c3d_path = Path(path)
     if c3d_path.suffix.lower() != ".c3d":
         raise ValueError(f"Unsupported file format: {c3d_path.suffix or '<none>'}")
     if not c3d_path.exists():
         raise FileNotFoundError(f"C3D file not found: {c3d_path}")
 
-    if not isinstance(marker_set, str):
+    if not isinstance(marker_set, str) or not marker_set.strip():
         raise ValueError("marker_set must be 'auto', 'pig', or 'isb'")
 
     try:
