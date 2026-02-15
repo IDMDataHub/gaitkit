@@ -36,7 +36,15 @@ test_that("gk_detect_ensemble validates numeric controls before Python bridge", 
     "'methods' cannot contain empty entries"
   )
   expect_error(
+    gk_detect_ensemble(dummy, methods = c("bike", "bike")),
+    "'methods' cannot contain duplicates"
+  )
+  expect_error(
     gk_detect_ensemble(dummy, methods = c("bike", "zeni"), min_votes = 0),
+    "'min_votes' must be an integer >= 1"
+  )
+  expect_error(
+    gk_detect_ensemble(dummy, methods = c("bike", "zeni"), min_votes = 1.5),
     "'min_votes' must be an integer >= 1"
   )
   expect_error(
