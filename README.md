@@ -147,3 +147,4 @@ Publication/community readiness tasks are tracked in [TODO.md](TODO.md).
 
 - Contribution guide: [CONTRIBUTING.md](CONTRIBUTING.md)
 - Security policy: [SECURITY.md](SECURITY.md)
+- Reproducibility checklist: [REPRODUCIBILITY.md](REPRODUCIBILITY.md)
