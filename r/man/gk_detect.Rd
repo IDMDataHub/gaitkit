@@ -9,7 +9,8 @@ gk_detect(data, method = "bike", fps = NULL)
   \code{angle_frames} or \code{fps} (for example from \code{gk_load_example()}),
   or a non-empty file path to a C3D file.}
 
-  \item{method}{Non-empty character scalar method name.
+  \item{method}{Non-empty character scalar method name (leading/trailing
+  whitespace is ignored).
   Use \code{gk_methods()} to list options.}
 
   \item{fps}{Optional positive numeric sampling frequency in Hz.
