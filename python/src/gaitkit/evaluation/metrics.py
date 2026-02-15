@@ -51,6 +51,17 @@ def compute_event_metrics(detected, ground_truth, tolerance_ms, fps,
         When valid_frame_range is not None the dict also includes
         n_detected_in_zone and n_detected_total for diagnostics.
     """
+    if fps is None or fps <= 0:
+        raise ValueError("fps must be strictly positive")
+    if tolerance_ms is None or tolerance_ms < 0:
+        raise ValueError("tolerance_ms must be >= 0")
+    if valid_frame_range is not None:
+        if not isinstance(valid_frame_range, tuple) or len(valid_frame_range) != 2:
+            raise ValueError("valid_frame_range must be a (start, end) tuple")
+        start, end = valid_frame_range
+        if start > end:
+            raise ValueError("valid_frame_range start must be <= end")
+
     tolerance_frames = int(tolerance_ms * fps / 1000)
 
     # --- Zone-aware filtering ------------------------------------------------
@@ -131,6 +142,8 @@ def compute_cadence_error(detected_hs, gt_cadence, fps):
     float
         Absolute cadence error, or -1 if not computable.
     """
+    if fps is None or fps <= 0:
+        raise ValueError("fps must be strictly positive")
     if len(detected_hs) < 2 or gt_cadence <= 0:
         return -1.0
     intervals = np.diff(sorted(detected_hs)) / fps
