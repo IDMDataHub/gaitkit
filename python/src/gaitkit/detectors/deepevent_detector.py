@@ -182,7 +182,7 @@ _MODEL_CACHE = {}  # singleton cache for the loaded model
 _CACHE_DIR = Path.home() / ".cache" / "gaitkit"
 _DEFAULT_WEIGHT_PATH = _CACHE_DIR / "DeepEventWeight.h5"
 _WEIGHTS_URLS = [
-    "https://github.com/IDMDataHub/gaitkit/raw/master/python/src/gaitkit/data/DeepEventWeight.h5",
+    "https://github.com/IDMDataHub/gaitkit/raw/master/assets/DeepEventWeight.h5",
     "https://github.com/LempereurMat/deepevent/raw/master/deepevent/data/DeepEventWeight.h5",
 ]
 
@@ -329,8 +329,6 @@ def _build_deepevent_model(weights_path: Optional[str] = None):
     if not weights_loaded:
         # Search standard locations for the weights file
         weight_paths = [
-            # Bundled in gaitkit package
-            Path(__file__).parent.parent / 'data' / 'DeepEventWeight.h5',
             # Auto-downloaded cache
             _DEFAULT_WEIGHT_PATH,
             # Legacy locations
