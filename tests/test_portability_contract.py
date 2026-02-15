@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import unittest
 from pathlib import Path
 
@@ -28,6 +29,19 @@ class TestPortabilityContract(unittest.TestCase):
         for path in targets:
             txt = path.read_text(encoding="utf-8")
             self.assertNotIn(legacy, txt, f"Legacy slug found in {path}")
+
+    def test_no_bare_except_or_silent_exception_pass_in_python_sources(self):
+        base_extractor = PROJECT_ROOT / "python" / "src" / "gaitkit" / "extractors" / "base_extractor.py"
+        for path in (PROJECT_ROOT / "python" / "src" / "gaitkit").rglob("*.py"):
+            if path == base_extractor:
+                continue
+            txt = path.read_text(encoding="utf-8")
+            self.assertNotRegex(txt, r"(?m)^\s*except:\s*$", f"Bare except found in {path}")
+            self.assertNotRegex(
+                txt,
+                r"(?ms)except\s+Exception\s*:\s*\n\s*pass\b",
+                f"Silent 'except Exception: pass' found in {path}",
+            )
 
 
 if __name__ == "__main__":
