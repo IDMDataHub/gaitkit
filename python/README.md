@@ -39,3 +39,11 @@ cached in `~/.cache/gaitkit/`.
 python -m pip install -e ./python
 python -m unittest -v
 ```
+
+## Build distributions
+
+```bash
+python -m pip install build
+cd python
+python -m build
+```
