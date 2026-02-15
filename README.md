@@ -32,6 +32,14 @@ on first DeepEvent use and cached in `~/.cache/gaitkit/`.
 remotes::install_github("IDMDataHub/gaitkit", subdir = "r")
 ```
 
+The R package calls the Python backend through `reticulate`.
+Make sure `gaitkit` is installed in the Python environment used by R, or run:
+
+```r
+library(gaitkit)
+gk_install_python()
+```
+
 **MATLAB** (requires R2021b+):
 
 ```matlab
