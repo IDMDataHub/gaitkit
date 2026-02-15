@@ -15,7 +15,34 @@ C-accelerated backends, accessible from Python, R, and MATLAB.
 
 ## Installation
 
+Current status: pre-release (not yet submitted to PyPI/CRAN).
+
+**Install from local source (recommended for now)**
+
 **Python** (requires >= 3.9):
+
+```bash
+python -m pip install -e ./python
+python -m pip install -e "./python[all]"   # optional extras
+```
+
+**R** (requires R >= 4.1):
+
+```r
+install.packages(c("reticulate", "jsonlite", "devtools"))
+devtools::install_local("r")
+```
+
+**MATLAB** (requires R2021b+):
+
+```matlab
+addpath("path/to/gaitkit/matlab")
+gaitkit.installPythonBackend()   % one-time setup
+```
+
+**Once published**
+
+**Python**:
 
 ```bash
 pip install gaitkit            # core (NumPy + SciPy)
@@ -25,7 +52,7 @@ pip install gaitkit[all]       # with ONNX, visualization, C3D support
 DeepEvent model weights (`DeepEventWeight.h5`) are downloaded automatically
 on first DeepEvent use and cached in `~/.cache/gaitkit/`.
 
-**R** (requires R >= 4.1):
+**R**:
 
 ```r
 # install.packages("remotes")

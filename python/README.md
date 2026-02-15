@@ -4,6 +4,17 @@ Python package for gait event detection from motion-capture data.
 
 ## Install
 
+Current status: pre-release (not yet published on PyPI).
+
+Install from local source:
+
+```bash
+python -m pip install -e ./python
+python -m pip install -e "./python[all]"   # optional extras
+```
+
+Once published:
+
 ```bash
 pip install gaitkit
 ```
