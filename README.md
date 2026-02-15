@@ -143,6 +143,7 @@ MIT -- see [LICENSE](LICENSE).
 ## Project Roadmap
 
 Publication/community readiness tasks are tracked in [TODO.md](TODO.md).
+Method and dataset references are centralized in [REFERENCES.md](REFERENCES.md).
 
 ## Community
 
