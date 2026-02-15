@@ -138,3 +138,7 @@ If you use gaitkit in your research, please cite:
 ## License
 
 MIT -- see [LICENSE](LICENSE).
+
+## Project Roadmap
+
+Publication/community readiness tasks are tracked in [TODO.md](TODO.md).
