@@ -16,6 +16,10 @@ class TestEvaluationMatching(unittest.TestCase):
     def test_rejects_negative_tolerance(self):
         with self.assertRaises(ValueError):
             match_events([1], [1], tolerance_frames=-1)
+        with self.assertRaises(ValueError):
+            match_events([1], [1], tolerance_frames=1.5)  # type: ignore[arg-type]
+        with self.assertRaises(ValueError):
+            match_events(None, [1], tolerance_frames=1)  # type: ignore[arg-type]
 
     def test_empty_fast_paths(self):
         matches, unmatched = match_events([], [10, 20], tolerance_frames=5)
