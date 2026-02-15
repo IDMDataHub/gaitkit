@@ -10,14 +10,11 @@ from scipy.ndimage import gaussian_filter1d
 try:
     from gaitkit.native import _gait_native as _native_solver
     _HAS_NATIVE = True
-except Exception:
+except ImportError:
     _native_solver = None
     _HAS_NATIVE = False
 
-try:
-    from gaitkit.detectors.dgei_detector import DGEIDetector
-except Exception:
-    from gaitkit.detectors.dgei_detector import DGEIDetector
+from gaitkit.detectors.dgei_detector import DGEIDetector
 
 
 class DGEINativeDetector(DGEIDetector):
@@ -34,4 +31,3 @@ class DGEINativeDetector(DGEIDetector):
             dgei_neg = gaussian_filter1d(np.asarray(neg_raw, dtype=np.float64), sigma=2)
             return dgei_pos, dgei_neg
         return super()._compute_dgei_curve(signal)
-
