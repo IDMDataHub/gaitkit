@@ -124,10 +124,10 @@ class GaitResult:
                 rows.append({
                     "side": side,
                     "hs1_time": round(t0, 4),
-                    "to_time": round(to_t, 4) if to_t else None,
+                    "to_time": round(to_t, 4) if to_t is not None else None,
                     "hs2_time": round(t2, 4),
-                    "stance_pct": round(stance, 1) if stance else None,
-                    "swing_pct": round(100 - stance, 1) if stance else None,
+                    "stance_pct": round(stance, 1) if stance is not None else None,
+                    "swing_pct": round(100 - stance, 1) if stance is not None else None,
                     "stride_time": round(stride, 4),
                     "cadence": round(60.0 / stride, 1) if stride > 0 else None,
                 })
