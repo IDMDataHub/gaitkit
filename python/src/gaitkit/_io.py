@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 
 _DATA_DIR = Path(__file__).parent / "data"
+logger = logging.getLogger(__name__)
 
 # ── Bundled examples ─────────────────────────────────────────────────
 
@@ -181,8 +183,8 @@ def load_c3d(path: str, marker_set: str = "auto") -> dict:
             if li is not None:
                 for fi in range(n_frames):
                     angle_frames[fi][angle_key] = float(points[0, li, fi])
-    except Exception:
-        pass
+    except (KeyError, TypeError, ValueError, IndexError) as exc:
+        logger.debug("Could not extract model angles from C3D payload: %s", exc)
 
     return {
         "angle_frames": angle_frames,
