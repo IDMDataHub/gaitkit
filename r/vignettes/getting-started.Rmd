@@ -12,6 +12,12 @@ vignette: >
 ```r
 # install.packages("remotes")
 remotes::install_github("IDMDataHub/gaitkit", subdir = "r")
+
+# Optional but recommended: choose the Python interpreter explicitly
+reticulate::use_python("/path/to/python", required = TRUE)
+
+# Ensure the Python backend is installed in that interpreter
+gaitkit::gk_install_python()
 ```
 
 ## Quick start
