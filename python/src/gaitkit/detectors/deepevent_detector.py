@@ -343,8 +343,8 @@ def _build_deepevent_model(weights_path: Optional[str] = None):
             import deepevent as de_pkg
             pkg_weight = Path(de_pkg.__file__).parent / 'data' / 'DeepEventWeight.h5'
             weight_paths.append(pkg_weight)
-        except ImportError:
-            pass
+        except ImportError as exc:
+            logger.debug("Optional deepevent package not available: %s", exc)
 
         for wp in weight_paths:
             if wp.exists() and wp.stat().st_size > 10000 and _is_hdf5_file(wp):
