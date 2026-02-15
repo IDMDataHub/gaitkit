@@ -29,3 +29,26 @@ This document tracks the pre-publication release flow for `gaitkit`.
    - `CITATION.cff`
    - `README.md` citation section
 4. Keep BIKE as software citation unless/until journal publication is public.
+
+## Trusted Publishing setup (PyPI + TestPyPI)
+
+`release.yml` supports:
+- tag `v*` -> publish to PyPI,
+- manual run (`workflow_dispatch`) -> publish to TestPyPI.
+
+Configure trusted publishers on both services:
+
+1. PyPI (`https://pypi.org/manage/project/gaitkit/publishing/`)
+   - Owner: `IDMDataHub`
+   - Repository: `gaitkit`
+   - Workflow name: `release.yml`
+2. TestPyPI (`https://test.pypi.org/manage/project/gaitkit/publishing/`)
+   - Owner: `IDMDataHub`
+   - Repository: `gaitkit`
+   - Workflow name: `release.yml`
+
+Publish flow:
+
+1. Manual dry run to TestPyPI from GitHub Actions (`Release` workflow).
+2. Validate installation from TestPyPI.
+3. Create and push release tag (`vX.Y.Z`) to publish on PyPI.

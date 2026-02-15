@@ -1,0 +1,18 @@
+{
+  "title": "gaitkit",
+  "description": "Universal gait event detection toolkit for motion capture data.",
+  "license": "MIT",
+  "upload_type": "software",
+  "creators": [
+    {
+      "name": "Fer, Frédéric",
+      "orcid": "0009-0002-2529-2479"
+    }
+  ],
+  "keywords": [
+    "gait",
+    "biomechanics",
+    "motion-capture",
+    "event-detection"
+  ]
+}
