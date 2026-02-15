@@ -39,6 +39,7 @@ Make sure `gaitkit` is installed in the Python environment used by R, or run:
 reticulate::use_python("/path/to/python", required = TRUE)  # optional but recommended
 library(gaitkit)
 gk_install_python()
+gk_install_python(package = "gaitkit[all]")  # optional extras
 ```
 
 **MATLAB** (requires R2021b+):
