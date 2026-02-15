@@ -22,6 +22,9 @@ pip install gaitkit            # core (NumPy + SciPy)
 pip install gaitkit[all]       # with ONNX, visualization, C3D support
 ```
 
+DeepEvent model weights (`DeepEventWeight.h5`) are downloaded automatically
+on first DeepEvent use and cached in `~/.cache/gaitkit/`.
+
 **R** (requires R >= 4.1):
 
 ```r

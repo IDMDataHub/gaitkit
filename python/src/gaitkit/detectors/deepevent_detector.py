@@ -26,6 +26,8 @@ selecting local maxima.
 
 import logging
 import os
+import tempfile
+import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -177,6 +179,51 @@ def _apply_rotation(positions: np.ndarray, rot: np.ndarray,
 # ---------------------------------------------------------------------------
 
 _MODEL_CACHE = {}  # singleton cache for the loaded model
+_CACHE_DIR = Path.home() / ".cache" / "gaitkit"
+_DEFAULT_WEIGHT_PATH = _CACHE_DIR / "DeepEventWeight.h5"
+_WEIGHTS_URLS = [
+    "https://github.com/IDMDataHub/gaitkit/raw/master/python/src/gaitkit/data/DeepEventWeight.h5",
+    "https://github.com/LempereurMat/deepevent/raw/master/deepevent/data/DeepEventWeight.h5",
+]
+
+
+def _is_hdf5_file(path: Path) -> bool:
+    try:
+        with path.open("rb") as f:
+            return f.read(8) == b"\x89HDF\r\n\x1a\n"
+    except Exception:
+        return False
+
+
+def _download_deepevent_weights(target_path: Path) -> Optional[Path]:
+    """Download DeepEvent weights to the local cache if possible."""
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+
+    for url in _WEIGHTS_URLS:
+        logger.warning(
+            "DeepEvent weights not found locally. Downloading from: %s",
+            url,
+        )
+        tmp_path = None
+        try:
+            with urllib.request.urlopen(url, timeout=60) as response:
+                fd, tmp_name = tempfile.mkstemp(prefix="deepevent_", suffix=".h5")
+                tmp_path = Path(tmp_name)
+                with os.fdopen(fd, "wb") as out:
+                    out.write(response.read())
+
+            if not _is_hdf5_file(tmp_path):
+                raise RuntimeError("downloaded file is not a valid HDF5 weights file")
+
+            tmp_path.replace(target_path)
+            logger.warning("DeepEvent weights downloaded and cached at: %s", target_path)
+            return target_path
+        except Exception as exc:
+            logger.warning("Could not download DeepEvent weights from %s: %s", url, exc)
+            if tmp_path is not None and tmp_path.exists():
+                tmp_path.unlink(missing_ok=True)
+
+    return None
 
 
 def _build_deepevent_model(weights_path: Optional[str] = None):
@@ -268,10 +315,24 @@ def _build_deepevent_model(weights_path: Optional[str] = None):
             logger.warning(f"Could not load weights from {weights_path}: {e}")
 
     if not weights_loaded:
+        env_weight = os.environ.get("GAITKIT_DEEPEVENT_WEIGHTS", "").strip()
+        if env_weight:
+            wp = Path(env_weight).expanduser()
+            if wp.exists() and wp.stat().st_size > 10000:
+                try:
+                    model.load_weights(str(wp))
+                    weights_loaded = True
+                    logger.info(f"Loaded DeepEvent weights from GAITKIT_DEEPEVENT_WEIGHTS={wp}")
+                except Exception as e:
+                    logger.warning(f"Could not load weights from {wp}: {e}")
+
+    if not weights_loaded:
         # Search standard locations for the weights file
         weight_paths = [
             # Bundled in gaitkit package
             Path(__file__).parent.parent / 'data' / 'DeepEventWeight.h5',
+            # Auto-downloaded cache
+            _DEFAULT_WEIGHT_PATH,
             # Legacy locations
             Path(__file__).parent.parent.parent.parent / 'gait_benchmark_project' / 'deepevent' / 'deepevent' / 'data' / 'DeepEventWeight.h5',
             Path.home() / 'gait_benchmark_project' / 'deepevent' / 'deepevent' / 'data' / 'DeepEventWeight.h5',
@@ -285,7 +346,7 @@ def _build_deepevent_model(weights_path: Optional[str] = None):
             pass
 
         for wp in weight_paths:
-            if wp.exists() and wp.stat().st_size > 10000:
+            if wp.exists() and wp.stat().st_size > 10000 and _is_hdf5_file(wp):
                 try:
                     model.load_weights(str(wp))
                     weights_loaded = True
@@ -295,11 +356,17 @@ def _build_deepevent_model(weights_path: Optional[str] = None):
                     logger.warning(f"Could not load weights from {wp}: {e}")
 
     if not weights_loaded:
-        logger.warning(
-            "DeepEvent weights not found. The model will run with random "
-            "weights. Download the weights file (DeepEventWeight.h5) from "
-            "https://github.com/LempereurMat/deepevent and place it in "
-            "~/gait_benchmark_project/deepevent/deepevent/data/"
+        downloaded = _download_deepevent_weights(_DEFAULT_WEIGHT_PATH)
+        if downloaded is not None:
+            model.load_weights(str(downloaded))
+            weights_loaded = True
+
+    if not weights_loaded:
+        raise RuntimeError(
+            "DeepEvent weights are required but unavailable. "
+            "Set GAITKIT_DEEPEVENT_WEIGHTS or place DeepEventWeight.h5 under "
+            "~/.cache/gaitkit/. Source: "
+            "https://github.com/IDMDataHub/gaitkit"
         )
 
     _MODEL_CACHE[cache_key] = model
