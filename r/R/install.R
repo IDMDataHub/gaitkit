@@ -11,6 +11,25 @@ gk_install_python <- function(envname = NULL, pip = TRUE) {
   if (!requireNamespace("reticulate", quietly = TRUE)) {
     stop("Package 'reticulate' is required", call. = FALSE)
   }
-  reticulate::py_install("gaitkit", envname = envname, pip = pip)
+  if (!is.null(envname) && (!is.character(envname) || length(envname) != 1L || !nzchar(envname))) {
+    stop("'envname' must be NULL or a non-empty character scalar", call. = FALSE)
+  }
+  if (!is.logical(pip) || length(pip) != 1L || is.na(pip)) {
+    stop("'pip' must be TRUE or FALSE", call. = FALSE)
+  }
+
+  tryCatch(
+    reticulate::py_install("gaitkit", envname = envname, pip = pip),
+    error = function(e) {
+      stop(
+        paste0(
+          "Failed to install Python package 'gaitkit' via reticulate::py_install(). ",
+          "Check network access and your Python environment configuration. ",
+          "Original error: ", conditionMessage(e)
+        ),
+        call. = FALSE
+      )
+    }
+  )
   invisible(TRUE)
 }
