@@ -150,3 +150,4 @@ Publication/community readiness tasks are tracked in [TODO.md](TODO.md).
 - Security policy: [SECURITY.md](SECURITY.md)
 - Reproducibility checklist: [REPRODUCIBILITY.md](REPRODUCIBILITY.md)
 - Detector registry smoke tests are included in reproducibility checks.
+- Evaluation guardrail smoke tests are included in reproducibility checks.
