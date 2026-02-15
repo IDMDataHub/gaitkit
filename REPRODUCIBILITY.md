@@ -35,6 +35,15 @@ Detector-registry robustness smoke test:
 PYTHONPATH=python/src python -m unittest -v tests.test_detectors_registry
 ```
 
+Evaluation-module guardrail smoke tests:
+
+```bash
+PYTHONPATH=python/src python -m unittest -v \
+  tests.test_evaluation_matching \
+  tests.test_evaluation_metrics \
+  tests.test_evaluation_statistics
+```
+
 ## 4. R wrapper smoke test
 
 ```bash
