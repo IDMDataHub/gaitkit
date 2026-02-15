@@ -12,7 +12,13 @@ print.gaitkit_result <- function(x, ...) {
   left_to <- if (is.null(x$left_to)) list() else x$left_to
   right_to <- if (is.null(x$right_to)) list() else x$right_to
 
-  method <- if (is.null(x$method) || !nzchar(as.character(x$method))) "unknown" else as.character(x$method)
+  method_raw <- x$method
+  if (is.null(method_raw) || length(method_raw) != 1L) {
+    method <- "unknown"
+  } else {
+    method <- as.character(method_raw)
+    if (!nzchar(method)) method <- "unknown"
+  }
   fps <- suppressWarnings(as.numeric(x$fps))
   n_frames <- suppressWarnings(as.integer(x$n_frames))
   if (length(fps) != 1L) fps <- NA_real_
@@ -93,8 +99,10 @@ plot.gaitkit_result <- function(x, type = "events", ...) {
     xlim <- range(events$time)
     ylim <- c(-0.5, 1.5)
 
+    method_label <- x$method
+    if (is.null(method_label) || length(method_label) != 1L) method_label <- "unknown"
     plot(xlim, ylim, type = "n", xlab = "Time (s)", ylab = "",
-         main = paste("Gait Events -", if (is.null(x$method)) "unknown" else x$method),
+         main = paste("Gait Events -", as.character(method_label)),
          yaxt = "n", ...)
     axis(2, at = c(0, 1), labels = c("TO", "HS"), las = 1)
 
@@ -140,6 +148,8 @@ plot.gaitkit_result <- function(x, type = "events", ...) {
     if (is.null(stance_col) || is.null(swing_col)) {
       stop("cycles data must include stance/swing percentage columns", call. = FALSE)
     }
+    method_label <- x$method
+    if (is.null(method_label) || length(method_label) != 1L) method_label <- "unknown"
     barplot(
       rbind(cycles[[stance_col]], cycles[[swing_col]]),
       beside = FALSE, col = c("#2166ac", "#fee08b"),
@@ -147,7 +157,7 @@ plot.gaitkit_result <- function(x, type = "events", ...) {
         if ("side" %in% names(cycles)) cycles$side else rep("cycle", nrow(cycles)),
         seq_len(nrow(cycles))
       ),
-      main = paste("Gait Cycles -", if (is.null(x$method)) "unknown" else x$method),
+      main = paste("Gait Cycles -", as.character(method_label)),
       ylab = "% of cycle",
       legend.text = c("Stance", "Swing"),
       args.legend = list(x = "topright")
