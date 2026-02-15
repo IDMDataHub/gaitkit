@@ -26,6 +26,9 @@
 \description{
 S3 methods for printing, summarizing and plotting outputs returned by
 \code{gk_detect()} and \code{gk_detect_ensemble()}.
+
+For event timelines, both event label styles are accepted:
+\code{"HS"}/\code{"TO"} and \code{"heel_strike"}/\code{"toe_off"}.
 }
 \examples{
 \dontrun{
