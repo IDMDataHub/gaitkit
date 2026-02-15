@@ -31,6 +31,8 @@ class TestEnsembleAPI(unittest.TestCase):
     def test_invalid_method_name_raises(self):
         with self.assertRaises(ValueError):
             gaitkit.detect_ensemble(self.trial, methods=["unknown", "zeni"])
+        with self.assertRaises(ValueError):
+            gaitkit.detect_ensemble(self.trial, methods=["bike", "   "])
 
     def test_rejects_invalid_numeric_parameters(self):
         with self.assertRaises(ValueError):
