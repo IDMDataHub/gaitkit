@@ -3,13 +3,13 @@ function result = detect(method, frames, fps, units)
 %   result = gaitkit.detect(method, frames, fps, units)
 %
 % Inputs
-%   method : char/string detector name (e.g. 'bayesian_bis')
+%   method : char/string detector name (e.g. 'bike')
 %   frames : struct array or cell array of frame structs
 %   fps    : scalar sampling frequency in Hz (default: 100)
 %   units  : struct with fields .position ('mm'|'m') and .angles ('deg'|'rad')
 
 if nargin < 1 || isempty(method)
-    method = 'bayesian_bis';
+    method = 'bike';
 end
 if nargin < 3
     fps = 100;
