@@ -13,7 +13,12 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "python" / "src"))
 
 import gaitkit.extractors as extractors
-from gaitkit.extractors.base_extractor import BaseExtractor, compute_signed_angle_2d
+from gaitkit.extractors.base_extractor import (
+    BaseExtractor,
+    GroundTruth,
+    compute_angle_from_3points,
+    compute_signed_angle_2d,
+)
 
 
 class _DummyExtractor(BaseExtractor):
@@ -60,6 +65,34 @@ class TestAngleHelpers(unittest.TestCase):
         self.assertGreaterEqual(angle, -180.0)
         self.assertLessEqual(angle, 180.0)
         self.assertAlmostEqual(angle, 90.0, places=7)
+
+    def test_compute_signed_angle_rejects_invalid_vectors(self):
+        with self.assertRaises(ValueError):
+            compute_signed_angle_2d(np.array([0.0, 0.0]), np.array([1.0, 0.0]))
+        with self.assertRaises(ValueError):
+            compute_signed_angle_2d(np.array([1.0]), np.array([1.0, 0.0]))
+
+    def test_compute_angle_from_3points_rejects_degenerate_vectors(self):
+        with self.assertRaises(ValueError):
+            compute_angle_from_3points(
+                np.array([1.0, 1.0]),
+                np.array([1.0, 1.0]),
+                np.array([2.0, 2.0]),
+            )
+
+
+class TestGroundTruthValidation(unittest.TestCase):
+    def test_valid_frame_range_is_validated(self):
+        with self.assertRaises(ValueError):
+            GroundTruth(valid_frame_range=(10, 5))
+        with self.assertRaises(ValueError):
+            GroundTruth(valid_frame_range=("a", "b"))
+        gt = GroundTruth(event_source="force_plate", valid_frame_range=(0, 42))
+        self.assertEqual(gt.valid_frame_range, (0, 42))
+
+    def test_event_source_is_validated(self):
+        with self.assertRaises(ValueError):
+            GroundTruth(event_source="unknown")
 
 
 class TestExtractorModuleImport(unittest.TestCase):
