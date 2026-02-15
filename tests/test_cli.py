@@ -31,6 +31,25 @@ class TestCliHelpers(unittest.TestCase):
             with self.assertRaises(ValueError):
                 cli._load_payload(p)
 
+    def test_load_payload_rejects_invalid_json(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / "in.json"
+            p.write_text("{invalid-json", encoding="utf-8")
+            with self.assertRaises(ValueError):
+                cli._load_payload(p)
+
+    def test_normalize_units_accepts_supported_values(self):
+        out = cli._normalize_units({"position": "MM", "angles": "Deg"})
+        self.assertEqual(out, {"position": "mm", "angles": "deg"})
+
+    def test_normalize_units_rejects_invalid_shapes(self):
+        with self.assertRaises(ValueError):
+            cli._normalize_units(["mm", "deg"])
+        with self.assertRaises(ValueError):
+            cli._normalize_units({"position": "cm"})
+        with self.assertRaises(ValueError):
+            cli._normalize_units({"angles": "grad"})
+
 
 if __name__ == "__main__":
     unittest.main()
