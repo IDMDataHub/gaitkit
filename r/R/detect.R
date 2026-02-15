@@ -151,27 +151,96 @@ gk_list_examples <- function() {
 }
 
 .wrap_result <- function(py_result) {
-  r <- reticulate::py_to_r(py_result)
+  has_attr <- function(name) {
+    isTRUE(reticulate::py_has_attr(py_result, name))
+  }
+  get_attr <- function(name, default = NULL) {
+    if (!has_attr(name)) return(default)
+    reticulate::py_to_r(py_result[[name]])
+  }
 
-  events_df <- tryCatch(
-    reticulate::py_to_r(py_result$events),
-    error = function(e) data.frame()
-  )
-  cycles_df <- tryCatch(
-    reticulate::py_to_r(py_result$cycles),
-    error = function(e) data.frame()
-  )
+  # Standard single-detector result shape
+  if (has_attr("left_hs") && has_attr("right_hs") &&
+      has_attr("left_to") && has_attr("right_to")) {
+    events_df <- tryCatch(
+      reticulate::py_to_r(py_result$events),
+      error = function(e) data.frame()
+    )
+    cycles_df <- tryCatch(
+      reticulate::py_to_r(py_result$cycles),
+      error = function(e) data.frame()
+    )
+
+    result <- list(
+      left_hs  = get_attr("left_hs", list()),
+      right_hs = get_attr("right_hs", list()),
+      left_to  = get_attr("left_to", list()),
+      right_to = get_attr("right_to", list()),
+      events   = events_df,
+      cycles   = cycles_df,
+      method   = get_attr("method", NA_character_),
+      fps      = get_attr("fps", NA_real_),
+      n_frames = get_attr("n_frames", NA_integer_)
+    )
+    class(result) <- "gaitkit_result"
+    return(result)
+  }
+
+  # Ensemble result shape (heel_strikes / toe_offs)
+  hs_raw <- tryCatch(reticulate::py_to_r(py_result$heel_strikes), error = function(e) list())
+  to_raw <- tryCatch(reticulate::py_to_r(py_result$toe_offs), error = function(e) list())
+  fps <- as.numeric(get_attr("fps", NA_real_))
+
+  .norm_event <- function(ev, event_type) {
+    frame <- if (!is.null(ev$frame)) ev$frame else ev$frame_index
+    time <- if (!is.null(ev$time)) ev$time else if (!is.na(fps)) frame / fps else NA_real_
+    conf <- if (!is.null(ev$confidence)) ev$confidence else 1.0
+    list(
+      frame = as.integer(frame),
+      time = as.numeric(time),
+      side = as.character(ev$side),
+      confidence = as.numeric(conf),
+      event_type = event_type
+    )
+  }
+
+  hs_norm <- lapply(hs_raw, .norm_event, event_type = "HS")
+  to_norm <- lapply(to_raw, .norm_event, event_type = "TO")
+  all_events <- c(hs_norm, to_norm)
+  if (length(all_events) > 0) {
+    events_df <- do.call(rbind, lapply(all_events, as.data.frame))
+    events_df <- events_df[order(events_df$time), , drop = FALSE]
+    rownames(events_df) <- NULL
+  } else {
+    events_df <- data.frame()
+  }
+
+  left_hs <- lapply(Filter(function(e) identical(e$side, "left"), hs_norm), function(e) {
+    list(frame = e$frame, time = e$time, confidence = e$confidence)
+  })
+  right_hs <- lapply(Filter(function(e) identical(e$side, "right"), hs_norm), function(e) {
+    list(frame = e$frame, time = e$time, confidence = e$confidence)
+  })
+  left_to <- lapply(Filter(function(e) identical(e$side, "left"), to_norm), function(e) {
+    list(frame = e$frame, time = e$time, confidence = e$confidence)
+  })
+  right_to <- lapply(Filter(function(e) identical(e$side, "right"), to_norm), function(e) {
+    list(frame = e$frame, time = e$time, confidence = e$confidence)
+  })
+
+  cycles_raw <- tryCatch(reticulate::py_to_r(py_result$cycles), error = function(e) list())
+  cycles_df <- if (length(cycles_raw) > 0) as.data.frame(cycles_raw) else data.frame()
 
   result <- list(
-    left_hs  = r$left_hs,
-    right_hs = r$right_hs,
-    left_to  = r$left_to,
-    right_to = r$right_to,
-    events   = events_df,
-    cycles   = cycles_df,
-    method   = r$method,
-    fps      = r$fps,
-    n_frames = r$n_frames
+    left_hs = left_hs,
+    right_hs = right_hs,
+    left_to = left_to,
+    right_to = right_to,
+    events = events_df,
+    cycles = cycles_df,
+    method = get_attr("method", "ensemble"),
+    fps = fps,
+    n_frames = get_attr("n_frames", NA_integer_)
   )
   class(result) <- "gaitkit_result"
   result
