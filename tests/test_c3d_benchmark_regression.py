@@ -1,7 +1,7 @@
 """C3D benchmark regression tests based on bundled reference files.
 
 This test validates BIKE performance on six curated C3D files using the
-expected scores documented in ``tests/test_c3d_benchmark.Rmd``.
+reference scores and guardrails encoded below.
 """
 
 from __future__ import annotations
@@ -31,7 +31,7 @@ class TestC3DBenchmarkRegression(unittest.TestCase):
     _BASE_DIR = PROJECT_ROOT / "python" / "src" / "gaitkit" / "data" / "c3d"
     _TOLERANCE_MS = 50.0
 
-    # Reference values from tests/test_c3d_benchmark.Rmd
+    # Reference values and thresholds for BIKE (50 ms tolerance).
     _CASES = {
         "vanderzee_p10_trial3.c3d": {
             "extractor": VanderzeeExtractor,
