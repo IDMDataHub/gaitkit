@@ -94,6 +94,12 @@ class TestDetect(unittest.TestCase):
         with self.assertRaises(ValueError):
             gaitkit.detect(self.trial, method="nonexistent")
 
+    def test_invalid_method_inputs_rejected(self):
+        with self.assertRaises(ValueError):
+            gaitkit.detect(self.trial, method="")
+        with self.assertRaises(ValueError):
+            gaitkit.detect(self.trial, method=None)  # type: ignore[arg-type]
+
     def test_invalid_fps_rejected(self):
         with self.assertRaises(ValueError):
             gaitkit.detect(self.trial, fps=0)
