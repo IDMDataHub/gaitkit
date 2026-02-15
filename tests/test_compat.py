@@ -52,6 +52,8 @@ class TestCompatHelpers(unittest.TestCase):
     def test_detect_events_structured_requires_non_empty_method(self):
         with self.assertRaises(ValueError):
             _compat.detect_events_structured("", [], 100.0)
+        with self.assertRaises(ValueError):
+            _compat.detect_events_structured("bike", [], "100")  # type: ignore[arg-type]
 
 
 if __name__ == "__main__":
