@@ -52,8 +52,16 @@ def match_events(detected: List[int], ground_truth: List[int],
     unmatched_gt : list of int
         Ground-truth frames that were not matched (false negatives).
     """
+    if tolerance_frames < 0:
+        raise ValueError("tolerance_frames must be >= 0")
+
     det_sorted = sorted(detected)
     gt_sorted = sorted(ground_truth)
+    if not det_sorted:
+        return [], gt_sorted
+    if not gt_sorted:
+        return [EventMatch(detected_frame=d, gt_frame=None, error_frames=None) for d in det_sorted], []
+
     gt_used = [False] * len(gt_sorted)
 
     matches = []
