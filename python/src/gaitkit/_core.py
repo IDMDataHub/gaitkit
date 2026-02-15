@@ -1,13 +1,9 @@
 """Core data structures and detection dispatch for gaitkit."""
 
 from __future__ import annotations
-
-import json
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Union
-
-import numpy as np
+from typing import Any, Dict, List, Optional
 
 # ── Method name mapping ──────────────────────────────────────────────
 _METHOD_ALIASES = {
@@ -307,7 +303,7 @@ def detect(
     """
     angle_frames, resolved_fps = _normalize_input(data, fps)
     det = _make_detector(method, resolved_fps)
-    hs, to, cycles = det.detect_gait_events(angle_frames)
+    hs, to, _cycles = det.detect_gait_events(angle_frames)
 
     # Split by side
     left_hs = _events_to_dicts([e for e in hs if e.side == "left"], resolved_fps)
