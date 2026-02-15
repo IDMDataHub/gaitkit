@@ -39,6 +39,22 @@ class TestEnsembleAPI(unittest.TestCase):
             gaitkit.detect_ensemble(self.trial, methods=["bike", "zeni"], min_votes=0)
         with self.assertRaises(ValueError):
             gaitkit.detect_ensemble(self.trial, methods=["bike", "zeni"], tolerance_ms=-1)
+        with self.assertRaises(ValueError):
+            gaitkit.detect_ensemble(self.trial, methods="bike")
+
+    def test_rejects_invalid_custom_weights(self):
+        with self.assertRaises(ValueError):
+            gaitkit.detect_ensemble(
+                self.trial,
+                methods=["bike", "zeni"],
+                weights={"bayesian_bis": -1},
+            )
+        with self.assertRaises(ValueError):
+            gaitkit.detect_ensemble(
+                self.trial,
+                methods=["bike", "zeni"],
+                weights={"bayesian_bis": float("nan")},
+            )
 
     def test_method_normalization_deduplicates_aliases(self):
         normalized = _ensemble._normalize_methods(["bike", "bayesian_bis", "zeni", "bike"])
