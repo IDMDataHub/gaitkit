@@ -112,6 +112,10 @@ class TestDetect(unittest.TestCase):
         with self.assertRaises(ValueError):
             gaitkit.detect([], method="bike", fps=100.0)
 
+    def test_blank_path_string_is_rejected(self):
+        with self.assertRaises(ValueError):
+            gaitkit.detect("   ", method="bike")
+
 
 class TestDetectAllMethods(unittest.TestCase):
     @classmethod
