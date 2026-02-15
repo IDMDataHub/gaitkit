@@ -42,7 +42,6 @@ from typing import List, Tuple, Dict, Optional
 from dataclasses import dataclass
 from pathlib import Path
 from scipy.signal import find_peaks
-from sklearn.preprocessing import minmax_scale
 import pandas as pd
 
 try:
@@ -88,6 +87,8 @@ class IntellEventDetector:
     MIN_PEAK_DISTANCE = 25  # frames at 150 Hz
 
     def __init__(self, fps: float = 100.0, models_dir: str = None):
+        if fps <= 0:
+            raise ValueError("fps must be strictly positive")
         self.fps = fps
 
         if not ONNX_AVAILABLE:
@@ -178,11 +179,6 @@ class IntellEventDetector:
                 fo_traj = np.concatenate([y_traj, x_traj, z_traj])
         """
         marker_order = ['LHEE', 'LTOE', 'LANK', 'RHEE', 'RTOE', 'RANK']
-        n = trajectories['LHEE'].shape[0]
-
-        prog_idx = 0 if progression_axis == 'x' else 1
-        other_idx = 1 if progression_axis == 'x' else 0
-        z_idx = 2
 
         # Build x_traj, y_traj, z_traj lists (each list of 6 1D arrays)
         x_traj = []
@@ -247,10 +243,15 @@ class IntellEventDetector:
     def _scale_velocities(self, velo: np.ndarray) -> np.ndarray:
         """Scale velocities to [0.1, 1.1] per feature.
 
-        Original uses: preprocessing.minmax_scale(velo, feature_range=(0.1, 1.1), axis=1)
-        sklearn minmax_scale with axis=1 scales each row independently.
+        Equivalent to sklearn minmax_scale(..., feature_range=(0.1, 1.1), axis=1),
+        implemented with NumPy to avoid a hard dependency on scikit-learn.
         """
-        return minmax_scale(velo, feature_range=(0.1, 1.1), axis=1)
+        vmin = np.min(velo, axis=1, keepdims=True)
+        vmax = np.max(velo, axis=1, keepdims=True)
+        span = vmax - vmin
+        safe_span = np.where(span == 0, 1.0, span)
+        scaled = (velo - vmin) / safe_span
+        return scaled + 0.1
 
     def _resample_to_target(self, data: np.ndarray) -> np.ndarray:
         """Resample to TARGET_FPS using pandas time-domain linear interpolation.
