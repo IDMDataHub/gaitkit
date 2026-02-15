@@ -330,8 +330,9 @@ def detect(
 
 def _normalize_input(data, fps):
     """Convert various input formats to (angle_frames, fps)."""
-    if fps is not None and fps <= 0:
-        raise ValueError("fps must be strictly positive")
+    if fps is not None:
+        if not isinstance(fps, (int, float)) or fps <= 0:
+            raise ValueError("fps must be strictly positive")
 
     # Case 1: string/Path → C3D file
     if isinstance(data, (str, Path)):
@@ -352,14 +353,14 @@ def _normalize_input(data, fps):
     if hasattr(data, "angle_frames") and hasattr(data, "fps"):
         if not data.angle_frames:
             raise ValueError("Input contains no angle frames")
-        if data.fps <= 0:
+        if not isinstance(data.fps, (int, float)) or data.fps <= 0:
             raise ValueError("Input sampling frequency must be strictly positive")
         return data.angle_frames, data.fps
 
     # Case 3: dict with 'angle_frames' key (from load_example)
     if isinstance(data, dict) and "angle_frames" in data:
-        resolved_fps = fps or data.get("fps", 100.0)
-        if resolved_fps <= 0:
+        resolved_fps = fps if fps is not None else data.get("fps", 100.0)
+        if not isinstance(resolved_fps, (int, float)) or resolved_fps <= 0:
             raise ValueError("Input sampling frequency must be strictly positive")
         af = data["angle_frames"]
         if not af:
@@ -373,7 +374,7 @@ def _normalize_input(data, fps):
     if isinstance(data, (list, tuple)):
         if fps is None:
             raise ValueError("fps is required when data is a list of frames")
-        if fps <= 0:
+        if not isinstance(fps, (int, float)) or fps <= 0:
             raise ValueError("fps must be strictly positive")
         af = data
         if not af:
