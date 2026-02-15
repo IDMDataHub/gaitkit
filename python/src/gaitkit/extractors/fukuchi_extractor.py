@@ -135,7 +135,7 @@ class FukuchiExtractor(BaseExtractor):
                     if not np.any(np.isnan(pos)) and np.linalg.norm(pos) > 0:
                         return pos
             return None
-        except:
+        except (KeyError, IndexError, TypeError, ValueError):
             return None
 
     def _find_landmark(self, c3d_data, landmark: str, frame: int) -> Optional[np.ndarray]:
