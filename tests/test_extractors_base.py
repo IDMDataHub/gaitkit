@@ -6,6 +6,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import numpy as np
 
@@ -99,6 +100,18 @@ class TestExtractorModuleImport(unittest.TestCase):
     def test_extractors_module_exposes_base_without_optional_dependencies(self):
         self.assertTrue(hasattr(extractors, "BaseExtractor"))
         self.assertIn("BaseExtractor", extractors.__all__)
+
+    def test_optional_import_ignores_missing_dependency_only(self):
+        with mock.patch.object(
+            extractors, "import_module", side_effect=ModuleNotFoundError("missing")
+        ):
+            extractors._optional_import(".missing_module", ["MissingExtractor"])
+        self.assertNotIn("MissingExtractor", extractors.__all__)
+
+    def test_optional_import_does_not_swallow_unrelated_errors(self):
+        with mock.patch.object(extractors, "import_module", side_effect=ValueError("boom")):
+            with self.assertRaises(ValueError):
+                extractors._optional_import(".broken_module", ["BrokenExtractor"])
 
 
 if __name__ == "__main__":
