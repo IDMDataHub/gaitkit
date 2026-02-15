@@ -526,6 +526,8 @@ def detect_ensemble(
                 len(to_right_by_method[method_name]),
             )
         except Exception as exc:
+            # Ensemble mode is designed to be fault-tolerant: one detector
+            # failing should not abort the full multi-method vote.
             logger.warning("Detector '%s' failed: %s", method_name, exc)
             methods_failed[method_name] = str(exc)
             # Remove from pools so it does not affect voter count
