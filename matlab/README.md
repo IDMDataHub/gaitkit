@@ -15,6 +15,9 @@ res = gaitkit.detect('bayesian_bis', frames, 100, struct('position','mm','angles
 `gaitkit.detect_events_structured` frame fields.
 
 If `method` is omitted or empty, `bayesian_bis` is used by default.
+`units` must be a struct with:
+- `position`: `'mm'` or `'m'`
+- `angles`: `'deg'` or `'rad'`
 
 ## Install backend from MATLAB
 
