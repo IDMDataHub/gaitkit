@@ -1,9 +1,12 @@
 """Core data structures and detection dispatch for gaitkit."""
 
 from __future__ import annotations
+import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
 
 # ── Method name mapping ──────────────────────────────────────────────
 _METHOD_ALIASES = {
@@ -233,8 +236,8 @@ def _make_detector(method: str, fps: float):
             cls = getattr(mod, cls_name)
             det = cls(fps=fps)
             return det
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Native detector '%s' unavailable, falling back to Python backend: %s", key, exc)
 
     # Fall back to pure Python
     if key in _python_map:
