@@ -10,7 +10,6 @@ C-accelerated backends, accessible from Python, R, and MATLAB.
 [![CRAN](https://img.shields.io/cran/v/gaitkit)](https://cran.r-project.org/package=gaitkit)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 -->
-[![CI](https://github.com/IDMDataHub/gaitkit/actions/workflows/ci.yml/badge.svg)](https://github.com/IDMDataHub/gaitkit/actions/workflows/ci.yml)
 
 ---
 
