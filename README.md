@@ -149,5 +149,6 @@ Publication/community readiness tasks are tracked in [TODO.md](TODO.md).
 - Contribution guide: [CONTRIBUTING.md](CONTRIBUTING.md)
 - Security policy: [SECURITY.md](SECURITY.md)
 - Reproducibility checklist: [REPRODUCIBILITY.md](REPRODUCIBILITY.md)
+- Python and R packaging validation commands are documented in the reproducibility checklist.
 - Detector registry smoke tests are included in reproducibility checks.
 - Evaluation guardrail smoke tests are included in reproducibility checks.
