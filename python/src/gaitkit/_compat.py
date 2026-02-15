@@ -217,9 +217,15 @@ def export_detection(
     formats: Iterable[str] = ("json",),
 ) -> Dict[str, str]:
     """Export legacy structured payload to JSON/CSV/XLSX."""
+    if not isinstance(payload, Mapping):
+        raise ValueError("payload must be a mapping")
+
     prefix = Path(output_prefix)
     prefix.parent.mkdir(parents=True, exist_ok=True)
-    wanted = [str(f).lower().strip() for f in formats]
+    if isinstance(formats, str):
+        wanted = [formats.lower().strip()]
+    else:
+        wanted = [str(f).lower().strip() for f in formats]
     if not wanted:
         raise ValueError("formats must not be empty")
     allowed = {"json", "csv", "xlsx"}
