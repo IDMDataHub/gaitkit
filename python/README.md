@@ -31,3 +31,10 @@ cached in `~/.cache/gaitkit/`.
 
 - Repository: https://github.com/IDMDataHub/gaitkit
 - Issue tracker: https://github.com/IDMDataHub/gaitkit/issues
+
+## Development testing
+
+```bash
+python -m pip install -e ./python
+python -m unittest -v
+```
