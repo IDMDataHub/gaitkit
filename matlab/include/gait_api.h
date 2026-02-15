@@ -33,8 +33,9 @@ typedef enum gait_method_id_v1 {
 
 typedef struct gait_trial_v1 {
     uint32_t n_frames;
-    double fps_hz;
+    double fps_hz; /* sampling frequency in Hz, must be > 0 */
 
+    /* Optional marker trajectories (flattened XYZ triples by frame). */
     const double* left_knee_xyz;
     const double* right_knee_xyz;
     const double* left_ankle_xyz;
@@ -45,6 +46,7 @@ typedef struct gait_trial_v1 {
     const double* left_toe_xyz;
     const double* right_toe_xyz;
 
+    /* Optional angle trajectories (degrees, one value per frame). */
     const double* left_hip_deg;
     const double* right_hip_deg;
     const double* left_knee_deg;
@@ -52,6 +54,7 @@ typedef struct gait_trial_v1 {
     const double* left_ankle_deg;
     const double* right_ankle_deg;
 
+    /* Optional axis metadata; set to -1 when unknown. */
     int32_t ap_axis;
     int32_t vertical_axis;
     int32_t walking_direction_sign;
@@ -85,6 +88,7 @@ typedef struct gait_cycle_v1 {
 } gait_cycle_v1;
 
 typedef struct gait_result_v1 {
+    /* Outputs are heap-owned by the API; release with gait_free_result_v1(). */
     gait_event_v1* events;
     uint32_t n_events;
     gait_cycle_v1* cycles;
