@@ -23,6 +23,10 @@ _EXAMPLE_MAP = {
 }
 
 
+def _normalize_example_name(name: str) -> str:
+    return name.lower().strip().replace(" ", "").replace("-", "").replace("_", "")
+
+
 def load_example(name: str = "healthy") -> dict:
     """Load a bundled example gait trial.
 
@@ -48,7 +52,7 @@ def load_example(name: str = "healthy") -> dict:
     """
     if not isinstance(name, str) or not name.strip():
         raise ValueError("Example name must be a non-empty string")
-    key = name.lower().strip()
+    key = _normalize_example_name(name)
     if key not in _EXAMPLE_MAP:
         avail = sorted(set(_EXAMPLE_MAP.keys()) - {"fukuchi", "pd", "parkinsons", "avc"})
         raise ValueError(f"Unknown example {name!r}. Available: {avail}")
