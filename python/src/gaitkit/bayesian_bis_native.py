@@ -16,24 +16,16 @@ from scipy.ndimage import gaussian_filter1d
 try:
     from gaitkit.native import _gait_native as _native_solver
     _HAS_NATIVE = True
-except Exception:
+except ImportError:
     _native_solver = None
     _HAS_NATIVE = False
 
-try:
-    from gaitkit.detectors.bayesian_bis import (
-        BayesianBisGaitDetector,
-        GaitEvent,
-        HS_PHASE_PRIOR,
-        TO_PHASE_PRIOR,
-    )
-except Exception:
-    from gaitkit.detectors.bayesian_bis import (
-        BayesianBisGaitDetector,
-        GaitEvent,
-        HS_PHASE_PRIOR,
-        TO_PHASE_PRIOR,
-    )
+from gaitkit.detectors.bayesian_bis import (
+    BayesianBisGaitDetector,
+    GaitEvent,
+    HS_PHASE_PRIOR,
+    TO_PHASE_PRIOR,
+)
 
 
 _STATE_LABELS = [("TO", "HS"), ("HS", "TO")]
