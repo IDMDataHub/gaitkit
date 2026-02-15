@@ -10,10 +10,7 @@ from __future__ import annotations
 import numpy as np
 from scipy.signal import butter, filtfilt
 
-try:
-    from gaitkit.detectors.vancanneyt_detector import VancanneytDetector
-except Exception:
-    from gaitkit.detectors.vancanneyt_detector import VancanneytDetector
+from gaitkit.detectors.vancanneyt_detector import VancanneytDetector
 
 
 class VancanneytNativeDetector(VancanneytDetector):
@@ -41,4 +38,3 @@ class VancanneytNativeDetector(VancanneytDetector):
         for col in range(data.shape[1]):
             filtered[:, col] = filtfilt(self._lp_b, self._lp_a, data[:, col])
         return filtered
-
