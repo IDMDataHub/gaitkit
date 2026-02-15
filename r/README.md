@@ -5,10 +5,14 @@ This package exposes the Python `gaitkit` backend in R via `reticulate`.
 ## Install (development)
 
 ```r
-install.packages(c("reticulate", "jsonlite"))
+install.packages(c("reticulate", "jsonlite", "devtools"))
 
-# Install Python backend first (wheel or editable), then:
-devtools::install_local("gaitkit/r")
+# From repository root:
+devtools::install_local("r")
+
+# Install Python backend in the active reticulate environment:
+library(gaitkit)
+gk_install_python()
 ```
 
 ## Usage
@@ -20,4 +24,10 @@ methods <- gk_methods()
 trial <- gk_load_example("healthy")
 res <- gk_detect(trial, method = "bike")
 print(res)
+```
+
+If R cannot find the Python module, set the interpreter first:
+
+```r
+reticulate::use_python("/path/to/python", required = TRUE)
 ```
