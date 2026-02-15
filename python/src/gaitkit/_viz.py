@@ -57,6 +57,13 @@ def plot_result(
     -------
     matplotlib.figure.Figure
     """
+    if result is None:
+        raise ValueError("result is required")
+    if getattr(result, "fps", 0) <= 0:
+        raise ValueError("result.fps must be strictly positive")
+    if getattr(result, "n_frames", 0) <= 0:
+        raise ValueError("result.n_frames must be strictly positive")
+
     plt = _import_mpl()
     af = result._angle_frames
 
@@ -145,6 +152,11 @@ def compare_plot(
     matplotlib.figure.Figure
     """
     from ._core import detect
+    if not methods:
+        raise ValueError("methods must contain at least one detector name")
+    if fps is not None and fps <= 0:
+        raise ValueError("fps must be strictly positive when provided")
+
     plt = _import_mpl()
 
     n = len(methods)
@@ -214,10 +226,12 @@ def plot_cycles(
     -------
     matplotlib.figure.Figure
     """
-    plt = _import_mpl()
+    if not isinstance(variable, str) or not variable.strip():
+        raise ValueError("variable must be a non-empty string")
     af = result._angle_frames
-    if af is None:
+    if af is None or len(af) == 0:
         raise ValueError("No angle frames stored in result; cannot plot cycles.")
+    plt = _import_mpl()
 
     if ax is None:
         fig, ax = plt.subplots(figsize=figsize)
