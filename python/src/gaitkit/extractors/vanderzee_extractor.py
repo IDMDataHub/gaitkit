@@ -46,18 +46,21 @@ from pathlib import Path
 from typing import List, Dict, Optional, Tuple
 from scipy.signal import medfilt
 import re
+import logging
 
 from .base_extractor import (
     BaseExtractor, ExtractionResult, AngleFrame, GroundTruth,
     compute_angle_from_3points
 )
 
+logger = logging.getLogger(__name__)
+
 try:
     import ezc3d
     HAS_EZC3D = True
 except ImportError:
     HAS_EZC3D = False
-    print("Warning: ezc3d not installed. Install with: pip install ezc3d")
+    logger.debug("ezc3d not installed. Install with: pip install ezc3d")
 
 
 # Trial lookup table: trial_number -> (speed_m_s, condition)
