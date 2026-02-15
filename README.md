@@ -157,7 +157,8 @@ If you use gaitkit in your research, please cite the software release:
   title   = {gaitkit},
   version = {0.1.0},
   year    = {2026},
-  url     = {https://github.com/IDMDataHub/gaitkit}
+  doi     = {10.5281/zenodo.18653110},
+  url     = {https://doi.org/10.5281/zenodo.18653110}
 }
 ```
 
