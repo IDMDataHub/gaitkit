@@ -8,6 +8,9 @@
 - Improved optional-dependency portability for extractor imports.
 - Clarified install, testing, and reproducibility documentation.
 - Strengthened evaluation helper input validation (metrics/matching/statistics).
+- Removed silent fallbacks (`except/pass`) in extractors and detector wrappers.
+- Simplified native-wrapper import logic to expected `ImportError` paths only.
+- Added explicit Python/R packaging verification commands and cleaner build ignores.
 
 ## 0.1.0 (2026-02-15)
 
