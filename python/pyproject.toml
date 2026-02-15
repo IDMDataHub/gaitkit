@@ -32,7 +32,14 @@ onnx = ["onnxruntime>=1.14"]
 deep = ["tensorflow>=2.12", "h5py"]
 viz = ["matplotlib>=3.7"]
 c3d = ["ezc3d>=1.5"]
-all = ["gaitkit[onnx,deep,viz,c3d]"]
+test = ["pytest>=7.0", "coverage>=7.0"]
+all = [
+    "onnxruntime>=1.14",
+    "tensorflow>=2.12",
+    "h5py",
+    "matplotlib>=3.7",
+    "ezc3d>=1.5",
+]
 
 [project.scripts]
 gaitkit-detect = "gaitkit.cli:main"
