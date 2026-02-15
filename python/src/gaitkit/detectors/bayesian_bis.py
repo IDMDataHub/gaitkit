@@ -166,6 +166,14 @@ class BayesianBisGaitDetector:
     def __init__(self, fps: float = 100.0, smoothing_window: int = 11,
                  min_crossing_distance: float = 0.2,
                  rhythm_sigma_ratio: float = 0.15) -> None:
+        if fps <= 0:
+            raise ValueError("fps must be strictly positive")
+        if smoothing_window < 5:
+            raise ValueError("smoothing_window must be >= 5")
+        if min_crossing_distance <= 0:
+            raise ValueError("min_crossing_distance must be strictly positive")
+        if rhythm_sigma_ratio <= 0:
+            raise ValueError("rhythm_sigma_ratio must be strictly positive")
         self.fps = fps
         self.smoothing_window = smoothing_window if smoothing_window % 2 == 1 else smoothing_window + 1
         self.min_crossing_frames = int(min_crossing_distance * fps)
