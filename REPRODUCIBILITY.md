@@ -29,6 +29,12 @@ PYTHONPATH=python/src python -m unittest -v tests.test_api tests.test_bikegait
 `tests/test_bikegait.py` validates that BIKE outputs on bundled examples match
 `tests/expected_example_bike_regression.json`.
 
+Detector-registry robustness smoke test:
+
+```bash
+PYTHONPATH=python/src python -m unittest -v tests.test_detectors_registry
+```
+
 ## 4. R wrapper smoke test
 
 ```bash
