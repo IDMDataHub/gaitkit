@@ -10,6 +10,10 @@ test_that("gk_install_python validates arguments before reticulate call", {
     "'envname' must be NULL or a non-empty character scalar"
   )
   expect_error(
+    gk_install_python(envname = "   "),
+    "'envname' must be NULL or a non-empty character scalar"
+  )
+  expect_error(
     gk_install_python(envname = 1),
     "'envname' must be NULL or a non-empty character scalar"
   )
