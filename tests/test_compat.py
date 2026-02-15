@@ -35,6 +35,20 @@ class TestCompatHelpers(unittest.TestCase):
             with self.assertRaises(ValueError):
                 _compat.export_detection(payload, prefix, formats=("json", "xml"))
 
+    def test_export_detection_accepts_single_string_format(self):
+        payload = {"heel_strikes": [], "toe_offs": [], "cycles": []}
+        with tempfile.TemporaryDirectory() as tmp:
+            prefix = Path(tmp) / "trial"
+            paths = _compat.export_detection(payload, prefix, formats="json")
+            self.assertIn("json", paths)
+            self.assertTrue(Path(paths["json"]).exists())
+
+    def test_export_detection_rejects_non_mapping_payload(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            prefix = Path(tmp) / "trial"
+            with self.assertRaises(ValueError):
+                _compat.export_detection([], prefix, formats="json")
+
     def test_detect_events_structured_requires_non_empty_method(self):
         with self.assertRaises(ValueError):
             _compat.detect_events_structured("", [], 100.0)
