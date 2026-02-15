@@ -4,6 +4,9 @@
 #' @param ... Ignored.
 #' @export
 print.gaitkit_result <- function(x, ...) {
+  if (!is.list(x)) {
+    stop("'x' must be a gaitkit_result list", call. = FALSE)
+  }
   n_hs <- length(x$left_hs) + length(x$right_hs)
   n_to <- length(x$left_to) + length(x$right_to)
   cat(sprintf("gaitkit_result  method=%s  fps=%.0f  frames=%d\n",
@@ -12,10 +15,20 @@ print.gaitkit_result <- function(x, ...) {
               n_hs, length(x$left_hs), length(x$right_hs)))
   cat(sprintf("  Toe-offs:     %d (L=%d, R=%d)\n",
               n_to, length(x$left_to), length(x$right_to)))
-  if (nrow(x$cycles) > 0) {
-    st <- mean(x$cycles$stride_time, na.rm = TRUE)
-    cad <- mean(x$cycles$cadence, na.rm = TRUE)
-    cat(sprintf("  Stride time:  %.3f s (cadence %.0f steps/min)\n", st, cad))
+  if (is.data.frame(x$cycles) && nrow(x$cycles) > 0) {
+    stride_col <- if ("stride_time" %in% names(x$cycles)) "stride_time" else
+      if ("duration" %in% names(x$cycles)) "duration" else NULL
+    if (!is.null(stride_col)) {
+      st <- mean(x$cycles[[stride_col]], na.rm = TRUE)
+      cad <- if ("cadence" %in% names(x$cycles)) {
+        mean(x$cycles$cadence, na.rm = TRUE)
+      } else {
+        if (is.finite(st) && st > 0) 60 / st else NA_real_
+      }
+      if (is.finite(st) && is.finite(cad)) {
+        cat(sprintf("  Stride time:  %.3f s (cadence %.0f steps/min)\n", st, cad))
+      }
+    }
   }
   invisible(x)
 }
