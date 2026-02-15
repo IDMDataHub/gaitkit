@@ -25,6 +25,16 @@ test_that("print.gaitkit_result validates input type", {
   )
 })
 
+test_that("print.gaitkit_result tolerates missing optional fields", {
+  x <- list(
+    events = data.frame(),
+    cycles = data.frame()
+  )
+  class(x) <- "gaitkit_result"
+
+  expect_invisible(print(x))
+})
+
 test_that("summary.gaitkit_result validates input type", {
   expect_error(
     summary.gaitkit_result("not_a_result"),
