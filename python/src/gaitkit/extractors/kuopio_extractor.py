@@ -392,8 +392,8 @@ class KuopioExtractor(BaseExtractor):
                     events[f'hs_{foot}'].append(hs_frame)
                     events[f'to_{foot}'].append(to_frame)
 
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Failed to extract force-plate events: %s", exc)
 
         # Sort and deduplicate
         for key in events:
