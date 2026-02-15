@@ -157,8 +157,12 @@ def compare_plot(
     matplotlib.figure.Figure
     """
     from ._core import detect
+    if isinstance(methods, (str, bytes)):
+        raise ValueError("methods must be a sequence of method names, not a single string")
     if not methods:
         raise ValueError("methods must contain at least one detector name")
+    if any(not isinstance(m, str) or not m.strip() for m in methods):
+        raise ValueError("methods must contain non-empty string names")
     if fps is not None and fps <= 0:
         raise ValueError("fps must be strictly positive when provided")
 
