@@ -10,7 +10,7 @@ readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.9"
 authors = [
-    {name = "Frédéric Fer", email = "frederic.fer@univ-poitiers.fr"}
+    {name = "Frédéric Fer", email = "f.fer@institut-myologie.org"}
 ]
 keywords = ["gait", "biomechanics", "motion-capture", "heel-strike", "toe-off", "event-detection"]
 classifiers = [

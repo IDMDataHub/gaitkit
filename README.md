@@ -26,7 +26,7 @@ pip install gaitkit[all]       # with ONNX, visualization, C3D support
 
 ```r
 # install.packages("remotes")
-remotes::install_github("fferlab/gaitkit", subdir = "r")
+remotes::install_github("IDMDataHub/gaitkit", subdir = "r")
 ```
 
 **MATLAB** (requires R2021b+):

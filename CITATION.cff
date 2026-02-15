@@ -5,7 +5,7 @@ type: software
 authors:
   - family-names: "Fer"
     given-names: "Frederic"
-    email: "frederic.fer@univ-poitiers.fr"
+    email: "f.fer@institut-myologie.org"
 repository-code: "https://github.com/IDMDataHub/gaitkit"
 license: "MIT"
 version: "0.1.0"
