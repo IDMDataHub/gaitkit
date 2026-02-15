@@ -198,8 +198,8 @@ class VancanneytDetector:
             try:
                 ap_axis, vert_axis = detect_axes(angle_frames)
                 return ap_axis, vert_axis
-            except Exception:
-                pass
+            except (TypeError, ValueError) as exc:
+                logger.debug("Axis auto-detection failed, using fallback: %s", exc)
         # Fallback: infer from ankle range
         positions = []
         for af in angle_frames:
