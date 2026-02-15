@@ -24,6 +24,14 @@ reticulate::use_python("/path/to/python", required = TRUE)
 In non-interactive sessions (CI, Rscript), exporting `RETICULATE_PYTHON`
 before starting R is the most reliable option.
 
+## Run tests
+
+```bash
+R_LIBS_USER=/tmp/gaitkit-r-lib \
+RETICULATE_PYTHON=/tmp/gaitkit-r-venv/bin/python \
+Rscript -e "testthat::test_dir('r/tests/testthat', reporter='summary')"
+```
+
 ## Usage
 
 ```r
