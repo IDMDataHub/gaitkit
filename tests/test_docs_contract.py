@@ -17,6 +17,10 @@ class TestDocsContract(unittest.TestCase):
         self.assertIn("[SECURITY.md](SECURITY.md)", readme)
         self.assertIn("[REPRODUCIBILITY.md](REPRODUCIBILITY.md)", readme)
 
+    def test_reproducibility_doc_mentions_registry_smoke_test(self):
+        text = (PROJECT_ROOT / "REPRODUCIBILITY.md").read_text(encoding="utf-8")
+        self.assertIn("tests.test_detectors_registry", text)
+
 
 if __name__ == "__main__":
     unittest.main()
