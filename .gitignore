@@ -21,6 +21,7 @@ env/
 *.Rhistory
 *.RData
 *.Rproj.user/
+r/*.tar.gz
 
 # MATLAB
 *.asv
