@@ -30,6 +30,10 @@ class TestVizValidation(unittest.TestCase):
         with mock.patch.object(_viz, "_import_mpl", side_effect=AssertionError("should not import")):
             with self.assertRaises(ValueError):
                 _viz.compare_plot(data=[], methods=[])
+            with self.assertRaises(ValueError):
+                _viz.compare_plot(data=[], methods="bike")
+            with self.assertRaises(ValueError):
+                _viz.compare_plot(data=[], methods=["bike", " "])
 
     def test_compare_plot_rejects_invalid_fps_before_mpl_import(self):
         with mock.patch.object(_viz, "_import_mpl", side_effect=AssertionError("should not import")):
