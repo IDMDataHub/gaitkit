@@ -1,5 +1,6 @@
 export(gk_detect)
 export(gk_detect_ensemble)
+export(gk_install_python)
 export(gk_load_example)
 export(gk_list_examples)
 export(gk_methods)

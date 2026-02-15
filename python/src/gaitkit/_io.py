@@ -111,7 +111,7 @@ def load_c3d(path: str, marker_set: str = "auto") -> dict:
     if marker_set == "auto":
         if "LHEE" in idx or "RHEE" in idx:
             marker_set = "pig"
-        elif "LeftHeel" in idx:
+        elif "LEFTHEEL" in idx:
             marker_set = "isb"
         else:
             marker_set = "pig"
@@ -126,6 +126,19 @@ def load_c3d(path: str, marker_set: str = "auto") -> dict:
             "left_hip": "LASI", "right_hip": "RASI",
             "left_shoulder": "LSHO", "right_shoulder": "RSHO",
             "sacrum": "SACR",
+        }
+    elif marker_set == "isb":
+        _map = {
+            "left_heel": "LEFTHEEL",
+            "right_heel": "RIGHTHEEL",
+            "left_toe": "LEFTTOE",
+            "right_toe": "RIGHTTOE",
+            "left_ankle": "LEFTANKLE",
+            "right_ankle": "RIGHTANKLE",
+            "left_knee": "LEFTKNEE",
+            "right_knee": "RIGHTKNEE",
+            "left_hip": "LEFTHIP",
+            "right_hip": "RIGHTHIP",
         }
     else:
         _map = {}

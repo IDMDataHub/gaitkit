@@ -16,7 +16,7 @@ Algorithm
 
 Author: Frederic Fer (f.fer@institut-myologie.org)
 Affiliation: Myodata, Institut de Myologie, Paris, France
-License: Apache-2.0
+License: MIT
 """
 
 from __future__ import annotations
