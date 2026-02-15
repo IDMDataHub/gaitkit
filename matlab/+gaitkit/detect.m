@@ -21,11 +21,29 @@ end
 if ~(ischar(method) || isstring(method))
     error('method must be char or string');
 end
+method = strtrim(char(method));
+if isempty(method)
+    error('method must be non-empty');
+end
 if ~isscalar(fps) || ~isnumeric(fps) || ~isfinite(fps) || fps <= 0
     error('fps must be a positive scalar');
 end
 if ~(isstruct(frames) || iscell(frames))
     error('frames must be a struct array or a cell array');
+end
+if ~isstruct(units)
+    error('units must be a struct with fields "position" and "angles"');
+end
+if ~isfield(units, 'position') || ~isfield(units, 'angles')
+    error('units must contain "position" and "angles" fields');
+end
+validPos = {'mm', 'm'};
+validAng = {'deg', 'rad'};
+if ~any(strcmpi(string(units.position), validPos))
+    error('units.position must be ''mm'' or ''m''');
+end
+if ~any(strcmpi(string(units.angles), validAng))
+    error('units.angles must be ''deg'' or ''rad''');
 end
 
 try
@@ -39,7 +57,7 @@ end
 try
     pyFrames = jsonMod.loads(jsonencode(frames));
     pyUnits = jsonMod.loads(jsonencode(units));
-    pyResult = gaitkitMod.detect_events_structured(char(method), pyFrames, double(fps), pyUnits);
+    pyResult = gaitkitMod.detect_events_structured(method, pyFrames, double(fps), pyUnits);
     resultJson = char(jsonMod.dumps(pyResult));
     result = jsondecode(resultJson);
 catch ME
