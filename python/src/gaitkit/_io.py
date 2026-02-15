@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Dict, Optional
 
 _DATA_DIR = Path(__file__).parent / "data"
 
@@ -52,7 +51,7 @@ def load_example(name: str = "healthy") -> dict:
     path = _DATA_DIR / _EXAMPLE_MAP[key]
     if not path.exists():
         raise FileNotFoundError(f"Example data not found at {path}")
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -108,6 +107,7 @@ def load_c3d(path: str, marker_set: str = "auto") -> dict:
     idx = {l.upper(): i for i, l in enumerate(labels)}
 
     # Detect marker set
+    marker_set = marker_set.lower().strip()
     if marker_set == "auto":
         if "LHEE" in idx or "RHEE" in idx:
             marker_set = "pig"
@@ -141,7 +141,7 @@ def load_c3d(path: str, marker_set: str = "auto") -> dict:
             "right_hip": "RIGHTHIP",
         }
     else:
-        _map = {}
+        raise ValueError(f"Unknown marker_set {marker_set!r}. Expected 'auto', 'pig', or 'isb'.")
 
     # Extract landmarks per frame
     angle_frames = []
@@ -168,7 +168,6 @@ def load_c3d(path: str, marker_set: str = "auto") -> dict:
 
     # Try to extract angles from MODEL outputs
     try:
-        analogs = c3d["parameters"]["POINT"]["LABELS"]["value"]
         # Check for computed angles (PiG model output)
         for angle_key, angle_label in [
             ("left_knee_angle", "LKneeAngles"),
