@@ -7,14 +7,29 @@ print.gaitkit_result <- function(x, ...) {
   if (!is.list(x)) {
     stop("'x' must be a gaitkit_result list", call. = FALSE)
   }
-  n_hs <- length(x$left_hs) + length(x$right_hs)
-  n_to <- length(x$left_to) + length(x$right_to)
-  cat(sprintf("gaitkit_result  method=%s  fps=%.0f  frames=%d\n",
-              x$method, x$fps, x$n_frames))
+  left_hs <- if (is.null(x$left_hs)) list() else x$left_hs
+  right_hs <- if (is.null(x$right_hs)) list() else x$right_hs
+  left_to <- if (is.null(x$left_to)) list() else x$left_to
+  right_to <- if (is.null(x$right_to)) list() else x$right_to
+
+  method <- if (is.null(x$method) || !nzchar(as.character(x$method))) "unknown" else as.character(x$method)
+  fps <- suppressWarnings(as.numeric(x$fps))
+  n_frames <- suppressWarnings(as.integer(x$n_frames))
+  if (length(fps) != 1L) fps <- NA_real_
+  if (length(n_frames) != 1L) n_frames <- NA_integer_
+  if (!is.finite(fps)) fps <- NA_real_
+  if (is.na(n_frames)) n_frames <- NA_integer_
+
+  n_hs <- length(left_hs) + length(right_hs)
+  n_to <- length(left_to) + length(right_to)
+  cat(sprintf("gaitkit_result  method=%s  fps=%s  frames=%s\n",
+              method,
+              if (is.finite(fps)) sprintf("%.0f", fps) else "NA",
+              if (!is.na(n_frames)) as.character(n_frames) else "NA"))
   cat(sprintf("  Heel-strikes: %d (L=%d, R=%d)\n",
-              n_hs, length(x$left_hs), length(x$right_hs)))
+              n_hs, length(left_hs), length(right_hs)))
   cat(sprintf("  Toe-offs:     %d (L=%d, R=%d)\n",
-              n_to, length(x$left_to), length(x$right_to)))
+              n_to, length(left_to), length(right_to)))
   if (is.data.frame(x$cycles) && nrow(x$cycles) > 0) {
     stride_col <- if ("stride_time" %in% names(x$cycles)) "stride_time" else
       if ("duration" %in% names(x$cycles)) "duration" else NULL
@@ -79,7 +94,8 @@ plot.gaitkit_result <- function(x, type = "events", ...) {
     ylim <- c(-0.5, 1.5)
 
     plot(xlim, ylim, type = "n", xlab = "Time (s)", ylab = "",
-         main = paste("Gait Events -", x$method), yaxt = "n", ...)
+         main = paste("Gait Events -", if (is.null(x$method)) "unknown" else x$method),
+         yaxt = "n", ...)
     axis(2, at = c(0, 1), labels = c("TO", "HS"), las = 1)
 
     # HS markers
@@ -127,8 +143,11 @@ plot.gaitkit_result <- function(x, type = "events", ...) {
     barplot(
       rbind(cycles[[stance_col]], cycles[[swing_col]]),
       beside = FALSE, col = c("#2166ac", "#fee08b"),
-      names.arg = paste(cycles$side, seq_len(nrow(cycles))),
-      main = paste("Gait Cycles -", x$method),
+      names.arg = paste(
+        if ("side" %in% names(cycles)) cycles$side else rep("cycle", nrow(cycles)),
+        seq_len(nrow(cycles))
+      ),
+      main = paste("Gait Cycles -", if (is.null(x$method)) "unknown" else x$method),
       ylab = "% of cycle",
       legend.text = c("Stance", "Swing"),
       args.legend = list(x = "topright")
