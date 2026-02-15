@@ -15,6 +15,8 @@ from gaitkit.evaluation.metrics import compute_cadence_error, compute_event_metr
 class TestEvaluationMetrics(unittest.TestCase):
     def test_compute_event_metrics_rejects_invalid_controls(self):
         with self.assertRaises(ValueError):
+            compute_event_metrics(None, [], tolerance_ms=10, fps=100)  # type: ignore[arg-type]
+        with self.assertRaises(ValueError):
             compute_event_metrics([], [], tolerance_ms=10, fps=0)
         with self.assertRaises(ValueError):
             compute_event_metrics([], [], tolerance_ms=-1, fps=100)
