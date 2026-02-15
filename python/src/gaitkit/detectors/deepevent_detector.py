@@ -36,8 +36,6 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 from scipy.signal import argrelextrema, butter, filtfilt
 
-from .axis_utils import detect_axes
-
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
@@ -424,6 +422,12 @@ class DeepEventDetector:
                  weights_path: Optional[str] = None,
                  event_threshold: float = 0.01,
                  filter_cutoff: float = 6.0):
+        if fps <= 0:
+            raise ValueError("fps must be strictly positive")
+        if not 0 <= event_threshold <= 1:
+            raise ValueError("event_threshold must be in [0, 1]")
+        if filter_cutoff <= 0:
+            raise ValueError("filter_cutoff must be strictly positive")
         self.fps = fps
         self.weights_path = weights_path
         self.event_threshold = event_threshold
