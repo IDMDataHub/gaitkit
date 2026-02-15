@@ -20,9 +20,10 @@ state for publication and broad community usage.
 
 ## 3) Packaging and Release Process
 
-- [ ] Add release checklist (version bump, changelog, tag, artifacts, notes).
+- [x] Add release checklist (version bump, changelog, tag, artifacts, notes).
 - [ ] Publish and test source/wheel builds on a clean environment.
 - [ ] Add CRAN submission checklist and reverse-dependency smoke checks.
+- [ ] Ensure package metadata URLs are publicly reachable before CRAN/PyPI submission.
 - [ ] Add compatibility table (Python/R/MATLAB versions + tested OS matrix).
 - [ ] Add signed release tags and reproducible release notes template.
 
