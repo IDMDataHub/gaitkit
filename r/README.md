@@ -1,14 +1,13 @@
-# gaitkit (CRAN package skeleton)
+# gaitkit (R interface)
 
-This package exposes the `gaitkit` Python backend in R via `reticulate`.
+This package exposes the Python `gaitkit` backend in R via `reticulate`.
 
-## Install (local during development)
+## Install (development)
 
 ```r
-# In R
 install.packages(c("reticulate", "jsonlite"))
-# install python package first (wheel or editable)
-# then:
+
+# Install Python backend first (wheel or editable), then:
 devtools::install_local("gaitkit/r")
 ```
 
@@ -16,10 +15,9 @@ devtools::install_local("gaitkit/r")
 
 ```r
 library(gaitkit)
+
 methods <- gk_methods()
 trial <- gk_load_example("healthy")
 res <- gk_detect(trial, method = "bike")
+print(res)
 ```
-
-`frames` is a list of named lists compatible with
-`gaitkit.detect`.
