@@ -3,11 +3,13 @@ from __future__ import annotations
 import math
 import sys
 import unittest
+from pathlib import Path
 
 import numpy as np
 from scipy.signal import find_peaks
 
-sys.path.insert(0, "/home/ffer/gaitkit/python/src")
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(PROJECT_ROOT / "python" / "src"))
 
 from gaitkit.native import _gait_native
 
