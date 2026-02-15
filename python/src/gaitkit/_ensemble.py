@@ -59,6 +59,12 @@ DEFAULT_METHODS: List[str] = [
     "dgei",
 ]
 
+_METHOD_ALIASES = {
+    "bike": "bayesian_bis",
+    "bayesian": "bayesian_bis",
+    "bis": "bayesian_bis",
+}
+
 
 # ---------------------------------------------------------------------------
 # Data classes
@@ -421,7 +427,7 @@ def detect_ensemble(
     if methods is None:
         methods = [m for m in DEFAULT_METHODS if m in DETECTOR_REGISTRY]
     else:
-        methods = list(methods)
+        methods = [_METHOD_ALIASES.get(str(m).lower().strip(), str(m).lower().strip()) for m in methods]
         for m in methods:
             if m not in DETECTOR_REGISTRY:
                 available = ", ".join(sorted(DETECTOR_REGISTRY.keys()))
@@ -454,7 +460,10 @@ def detect_ensemble(
     for method_name in methods:
         try:
             detector = get_detector(method_name, fps=fps, **kwargs)
-            hs_events, to_events, cycles = detector.detect(data)
+            if hasattr(detector, "detect"):
+                hs_events, to_events, cycles = detector.detect(data)
+            else:
+                hs_events, to_events, cycles = detector.detect_gait_events(data)
             per_method_results[method_name] = (hs_events, to_events, cycles)
 
             # Partition by side
