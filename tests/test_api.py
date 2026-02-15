@@ -1,7 +1,10 @@
 """Tests for gaitkit public API."""
 
 import sys
-sys.path.insert(0, '/home/ffer/gaitkit/python/src')
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(PROJECT_ROOT / "python" / "src"))
 
 import unittest
 import gaitkit
