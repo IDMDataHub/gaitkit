@@ -124,7 +124,7 @@ class KuopioOpenPoseExtractor(BaseExtractor):
                     subj_num = int(parts[i + 1])
                     info['subject_id'] = f'KUO{subj_num:02d}'
                 except (ValueError, IndexError):
-                    pass
+                    continue
 
         match = re.match(r'([lr])_(comf|slow|fast)_(\d+)', trial_name)
         if match:
