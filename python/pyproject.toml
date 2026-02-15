@@ -17,7 +17,12 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Programming Language :: C",
     "Topic :: Scientific/Engineering :: Medical Science Apps.",
 ]
@@ -49,6 +54,7 @@ Homepage = "https://github.com/IDMDataHub/gaitkit"
 Documentation = "https://github.com/IDMDataHub/gaitkit#readme"
 Repository = "https://github.com/IDMDataHub/gaitkit"
 Issues = "https://github.com/IDMDataHub/gaitkit/issues"
+Changelog = "https://github.com/IDMDataHub/gaitkit/blob/master/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 where = ["src"]
