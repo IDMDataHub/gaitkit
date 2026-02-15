@@ -166,6 +166,8 @@ If you use gaitkit in your research, please cite the software release:
 ## License
 
 MIT -- see [LICENSE](LICENSE).
+Third-party model assets and their licenses are documented in
+[THIRD_PARTY_MODELS.md](THIRD_PARTY_MODELS.md).
 
 ## Project Roadmap
 
