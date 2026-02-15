@@ -1,18 +1,16 @@
-"""
-Base Extractor - Interface commune pour tous les extracteurs.
-"""
+"""Shared extractor abstractions and geometry helpers."""
 
 import numpy as np
 import pandas as pd
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Tuple, Any
+from typing import Dict, List, Optional, Tuple
 from pathlib import Path
 
 
 @dataclass
 class GroundTruth:
-    """Ground truth disponible pour une séquence."""
+    """Ground-truth metadata and optional references for one sequence."""
     has_hs: bool = False  # Heel Strike events
     has_to: bool = False  # Toe Off events
     has_cadence: bool = False  # Cadence/stride time
@@ -40,6 +38,25 @@ class GroundTruth:
     angles_ref: Optional[pd.DataFrame] = None  # reference angles
 
     def __post_init__(self):
+        valid_event_sources = {"annotated", "force_plate", "derived"}
+        if self.event_source not in valid_event_sources:
+            raise ValueError(
+                "'event_source' must be one of: annotated, force_plate, derived"
+            )
+        if self.valid_frame_range is not None:
+            if (
+                not isinstance(self.valid_frame_range, tuple)
+                or len(self.valid_frame_range) != 2
+                or not all(isinstance(v, int) for v in self.valid_frame_range)
+            ):
+                raise ValueError(
+                    "'valid_frame_range' must be a (start, end) tuple of integers"
+                )
+            start, end = self.valid_frame_range
+            if start < 0 or end < 0 or start > end:
+                raise ValueError(
+                    "'valid_frame_range' must satisfy 0 <= start <= end"
+                )
         if self.hs_frames is None:
             self.hs_frames = {'left': [], 'right': []}
         if self.to_frames is None:
@@ -48,7 +65,7 @@ class GroundTruth:
 
 @dataclass
 class AngleFrame:
-    """Frame d'angles articulaires - format commun."""
+    """Joint-angle sample in a dataset-agnostic format."""
     frame_index: int
     left_hip_angle: float
     right_hip_angle: float
@@ -68,7 +85,7 @@ class AngleFrame:
 
 @dataclass
 class ExtractionResult:
-    """Résultat d'extraction d'une séquence."""
+    """Extractor output payload for a single sequence."""
     # Metadata
     source_file: str
     subject_id: str
@@ -92,7 +109,7 @@ class ExtractionResult:
     warnings: List[str] = field(default_factory=list)
 
     def to_dict(self) -> Dict:
-        """Convertit en dictionnaire pour sérialisation."""
+        """Return a JSON-serializable summary dictionary."""
         return {
             'source_file': self.source_file,
             'subject_id': self.subject_id,
@@ -118,39 +135,39 @@ class ExtractionResult:
 
 
 class BaseExtractor(ABC):
-    """Classe de base pour tous les extracteurs."""
+    """Base class implemented by dataset-specific extractors."""
 
     def __init__(self, data_dir: str):
         if not isinstance(data_dir, (str, Path)) or not str(data_dir).strip():
             raise ValueError("'data_dir' must be a non-empty path-like value")
         self.data_dir = Path(data_dir)
-        if not self.data_dir.exists():
+        if not self.data_dir.exists() or not self.data_dir.is_dir():
             raise ValueError(f"Directory not found: {data_dir}")
 
     @property
     @abstractmethod
     def name(self) -> str:
-        """Nom de la base de données."""
+        """Human-readable dataset name."""
         pass
 
     @property
     @abstractmethod
     def description(self) -> str:
-        """Description de la base."""
+        """Short dataset description."""
         pass
 
     @abstractmethod
     def list_files(self) -> List[Path]:
-        """Liste tous les fichiers extractibles."""
+        """List all extractable source files."""
         pass
 
     @abstractmethod
     def extract_file(self, filepath: Path) -> ExtractionResult:
-        """Extrait les données d'un fichier."""
+        """Extract and normalize one file."""
         pass
 
     def extract_all(self, max_files: Optional[int] = None) -> List[ExtractionResult]:
-        """Extrait toutes les données de la base."""
+        """Extract all available files, optionally capped by `max_files`."""
         if max_files is not None:
             if not isinstance(max_files, int) or max_files <= 0:
                 raise ValueError("'max_files' must be a positive integer when provided")
@@ -163,13 +180,13 @@ class BaseExtractor(ABC):
             try:
                 result = self.extract_file(f)
                 results.append(result)
-            except Exception as e:
-                print(f"Error extracting {f}: {e}")
+            except Exception as exc:
+                print(f"Error extracting {f}: {exc}")
 
         return results
 
     def get_summary(self) -> Dict:
-        """Retourne un résumé de la base."""
+        """Return metadata summary for this extractor."""
         files = self.list_files()
         return {
             'name': self.name,
@@ -180,17 +197,13 @@ class BaseExtractor(ABC):
 
 
 def compute_angle_from_3points(p1: np.ndarray, p2: np.ndarray, p3: np.ndarray) -> float:
-    """
-    Calcule l'angle au point p2 formé par p1-p2-p3.
-
-    Args:
-        p1, p2, p3: Points 3D ou 2D
-
-    Returns:
-        Angle en degrés
-    """
+    """Compute the angle at `p2` formed by points (`p1`, `p2`, `p3`) in degrees."""
+    if any(v is None for v in (p1, p2, p3)):
+        raise ValueError("p1, p2 and p3 must be provided")
     v1 = p1 - p2
     v2 = p3 - p2
+    if np.linalg.norm(v1) == 0.0 or np.linalg.norm(v2) == 0.0:
+        raise ValueError("Cannot compute angle from zero-length vectors")
 
     v1_norm = v1 / (np.linalg.norm(v1) + 1e-10)
     v2_norm = v2 / (np.linalg.norm(v2) + 1e-10)
@@ -200,13 +213,16 @@ def compute_angle_from_3points(p1: np.ndarray, p2: np.ndarray, p3: np.ndarray) -
 
 
 def compute_signed_angle_2d(v1: np.ndarray, v2: np.ndarray) -> float:
-    """
-    Calcule l'angle signé entre deux vecteurs 2D.
-
-    Returns:
-        Angle en degrés (-180 à 180)
-    """
-    angle = np.arctan2(v2[1], v2[0]) - np.arctan2(v1[1], v1[0])
+    """Compute signed angle from `v1` to `v2` in degrees in the range [-180, 180]."""
+    if v1 is None or v2 is None:
+        raise ValueError("v1 and v2 must be provided")
+    v1_arr = np.asarray(v1).reshape(-1)
+    v2_arr = np.asarray(v2).reshape(-1)
+    if v1_arr.size < 2 or v2_arr.size < 2:
+        raise ValueError("v1 and v2 must contain at least two components")
+    if np.linalg.norm(v1_arr[:2]) == 0.0 or np.linalg.norm(v2_arr[:2]) == 0.0:
+        raise ValueError("Cannot compute signed angle with zero-length vectors")
+    angle = np.arctan2(v2_arr[1], v2_arr[0]) - np.arctan2(v1_arr[1], v1_arr[0])
     angle_deg = np.degrees(angle)
     # Wrap to [-180, 180] to match documented contract.
     return ((angle_deg + 180.0) % 360.0) - 180.0
