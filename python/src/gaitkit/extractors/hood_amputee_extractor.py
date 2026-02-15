@@ -198,8 +198,8 @@ class HoodAmputeeExtractor(BaseExtractor):
                 elif 'OFF' in label_upper:
                     events[f'to_{side}'].append(frame)
 
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Failed to parse C3D EVENT entries: %s", exc)
 
         for key in events:
             events[key] = sorted(list(set(events[key])))
