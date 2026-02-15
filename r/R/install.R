@@ -13,8 +13,11 @@ gk_install_python <- function(envname = NULL, pip = TRUE, package = "gaitkit") {
   if (!requireNamespace("reticulate", quietly = TRUE)) {
     stop("Package 'reticulate' is required", call. = FALSE)
   }
-  if (!is.null(envname) && (!is.character(envname) || length(envname) != 1L || !nzchar(envname))) {
-    stop("'envname' must be NULL or a non-empty character scalar", call. = FALSE)
+  if (!is.null(envname)) {
+    if (!is.character(envname) || length(envname) != 1L || !nzchar(trimws(envname))) {
+      stop("'envname' must be NULL or a non-empty character scalar", call. = FALSE)
+    }
+    envname <- trimws(envname)
   }
   if (!is.logical(pip) || length(pip) != 1L || is.na(pip)) {
     stop("'pip' must be TRUE or FALSE", call. = FALSE)
