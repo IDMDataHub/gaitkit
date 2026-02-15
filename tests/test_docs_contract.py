@@ -20,6 +20,7 @@ class TestDocsContract(unittest.TestCase):
     def test_reproducibility_doc_mentions_registry_smoke_test(self):
         text = (PROJECT_ROOT / "REPRODUCIBILITY.md").read_text(encoding="utf-8")
         self.assertIn("tests.test_detectors_registry", text)
+        self.assertIn("tests.test_evaluation_matching", text)
 
 
 if __name__ == "__main__":
