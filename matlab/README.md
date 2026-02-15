@@ -8,7 +8,7 @@ MATLAB wrapper around `py.gaitkit`.
 addpath('gaitkit/matlab')
 pyenv("Version","/path/to/python")  % optional, to select interpreter
 methods = gaitkit.listMethods();
-res = gaitkit.detect('bayesian_bis', frames, 100, struct('position','mm','angles','deg'));
+res = gaitkit.detect('bike', frames, 100, struct('position','mm','angles','deg'));
 ```
 
 `frames` must be a struct array compatible with
