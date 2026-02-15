@@ -27,6 +27,7 @@ selecting local maxima.
 import logging
 import os
 import tempfile
+import urllib.error
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
@@ -191,7 +192,7 @@ def _is_hdf5_file(path: Path) -> bool:
     try:
         with path.open("rb") as f:
             return f.read(8) == b"\x89HDF\r\n\x1a\n"
-    except Exception:
+    except OSError:
         return False
 
 
@@ -222,7 +223,7 @@ def _download_deepevent_weights(target_path: Path) -> Optional[Path]:
             tmp_path.replace(target_path)
             logger.warning("DeepEvent weights downloaded and cached at: %s", target_path)
             return target_path
-        except Exception as exc:
+        except (OSError, urllib.error.URLError, TimeoutError, RuntimeError) as exc:
             logger.warning("Could not download DeepEvent weights from %s: %s", url, exc)
             if tmp_path is not None and tmp_path.exists():
                 tmp_path.unlink(missing_ok=True)
@@ -360,8 +361,16 @@ def _build_deepevent_model(weights_path: Optional[str] = None):
     if not weights_loaded:
         downloaded = _download_deepevent_weights(_DEFAULT_WEIGHT_PATH)
         if downloaded is not None:
-            model.load_weights(str(downloaded))
-            weights_loaded = True
+            try:
+                model.load_weights(str(downloaded))
+                weights_loaded = True
+            except (OSError, ValueError) as exc:
+                logger.warning(
+                    "Downloaded DeepEvent weights at %s could not be loaded: %s",
+                    downloaded,
+                    exc,
+                )
+                downloaded.unlink(missing_ok=True)
 
     if not weights_loaded:
         raise RuntimeError(
