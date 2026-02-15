@@ -19,10 +19,9 @@ goes from near-zero to positive = foot starts rising).
 """
 
 import numpy as np
-from typing import List, Tuple, Dict, Optional
+from typing import Optional
 from dataclasses import dataclass
-from scipy.signal import find_peaks, savgol_filter
-from scipy.ndimage import gaussian_filter1d
+from scipy.signal import savgol_filter
 
 from .axis_utils import detect_axes
 
@@ -86,6 +85,14 @@ class MickelboroughDetector:
     def __init__(self, fps: float = 100.0, smooth_window: int = 7,
                  min_cycle_duration: float = 0.4,
                  threshold_fraction: float = 0.05):
+        if fps <= 0:
+            raise ValueError("fps must be strictly positive")
+        if smooth_window < 5:
+            raise ValueError("smooth_window must be >= 5")
+        if min_cycle_duration <= 0:
+            raise ValueError("min_cycle_duration must be strictly positive")
+        if threshold_fraction < 0:
+            raise ValueError("threshold_fraction must be >= 0")
         self.fps = fps
         self.smooth_window = smooth_window if smooth_window % 2 == 1 else smooth_window + 1
         self.min_interval = int(min_cycle_duration * fps / 2)
