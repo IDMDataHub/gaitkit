@@ -271,8 +271,8 @@ class VanderzeeExtractor(BaseExtractor):
                 dist_right = abs(rcal_mean_x - plate_x_center)
                 mapping[plate] = 'left' if dist_left < dist_right else 'right'
 
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Could not determine force-plate to foot mapping: %s", exc)
 
         return mapping
 
@@ -369,8 +369,8 @@ class VanderzeeExtractor(BaseExtractor):
                 events[f'hs_{side}'].extend(hs_frames)
                 events[f'to_{side}'].extend(to_frames)
 
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Failed to extract force-plate events: %s", exc)
 
         # Sort and deduplicate
         for key in events:
