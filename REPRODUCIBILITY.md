@@ -32,8 +32,10 @@ PYTHONPATH=python/src python -m unittest -v tests.test_api tests.test_bikegait
 ## 4. R wrapper smoke test
 
 ```bash
-R CMD INSTALL r
-Rscript -e 'library(gaitkit); x <- gk_load_example("healthy"); y <- gk_detect(x, method="bike"); stopifnot(nrow(y$events) > 0)'
+Rscript -e "install.packages(c('testthat','reticulate','jsonlite'), repos='https://cloud.r-project.org')"
+R_LIBS_USER=/tmp/gaitkit-r-lib \
+RETICULATE_PYTHON=/tmp/gaitkit-r-venv/bin/python \
+Rscript -e "testthat::test_dir('r/tests/testthat', reporter='summary')"
 ```
 
 ## 5. C3D external validation (recommended before release)
