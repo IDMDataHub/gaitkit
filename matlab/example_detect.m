@@ -1,4 +1,19 @@
-addpath('gaitkit/matlab');
+% Example usage for the MATLAB wrapper.
+% Run this script from anywhere; it resolves the wrapper path automatically.
+
+thisDir = fileparts(mfilename('fullpath'));
+addpath(thisDir);
+
+if count(py.sys.path, '') == 0
+    insert(py.sys.path, int32(0), '');
+end
+
+try
+    py.importlib.import_module('gaitkit');
+catch ME
+    error(['Python module ''gaitkit'' is not available in current pyenv. ', ...
+           'Run gaitkit.installPythonBackend() first. Original error: %s'], ME.message);
+end
 
 frames = repmat(struct(...
     'frame_index', 0, ...
@@ -17,5 +32,8 @@ for i = 1:numel(frames)
     frames(i).frame_index = i - 1;
 end
 
-methods = gaitkit.listMethods()
-result = gaitkit.detect('bayesian_bis', frames, 100, struct('position','mm','angles','deg'))
+methods = gaitkit.listMethods();
+disp(methods);
+
+result = gaitkit.detect('bayesian_bis', frames, 100, struct('position','mm','angles','deg'));
+disp(result);
