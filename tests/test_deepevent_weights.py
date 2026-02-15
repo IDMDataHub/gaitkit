@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import tempfile
 import unittest
+import urllib.error
 from pathlib import Path
 from unittest import mock
 
@@ -35,6 +36,10 @@ class TestDeepEventWeightsHelpers(unittest.TestCase):
     def test_default_cache_path_location(self):
         self.assertEqual(dd._DEFAULT_WEIGHT_PATH.name, "DeepEventWeight.h5")
         self.assertIn(".cache", str(dd._DEFAULT_WEIGHT_PATH))
+
+    def test_hdf5_signature_missing_file_returns_false(self):
+        missing = Path(tempfile.gettempdir()) / "does_not_exist_deepevent.h5"
+        self.assertFalse(dd._is_hdf5_file(missing))
 
     def test_download_weights_success_with_mocked_response(self):
         content = b"\x89HDF\r\n\x1a\n" + b"\x00" * 64
@@ -87,6 +92,19 @@ class TestDeepEventWeightsHelpers(unittest.TestCase):
             target = Path(tmp) / "DeepEventWeight.h5"
             with mock.patch.object(dd, "_WEIGHTS_URLS", ["https://example.test/w_bad.h5"]):
                 with mock.patch.object(dd.urllib.request, "urlopen", return_value=_Resp()):
+                    out = dd._download_deepevent_weights(target)
+            self.assertIsNone(out)
+            self.assertFalse(target.exists())
+
+    def test_download_weights_returns_none_on_url_error(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "DeepEventWeight.h5"
+            with mock.patch.object(dd, "_WEIGHTS_URLS", ["https://example.test/w_missing.h5"]):
+                with mock.patch.object(
+                    dd.urllib.request,
+                    "urlopen",
+                    side_effect=urllib.error.URLError("network down"),
+                ):
                     out = dd._download_deepevent_weights(target)
             self.assertIsNone(out)
             self.assertFalse(target.exists())
