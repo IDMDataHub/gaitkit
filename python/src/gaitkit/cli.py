@@ -42,6 +42,8 @@ def _write_json(path: Path | None, payload: Dict[str, Any]) -> None:
 
 
 def _parse_formats(value: str) -> Sequence[str]:
+    if not isinstance(value, str):
+        raise ValueError("--formats must be a comma-separated string")
     parts = [p.strip().lower() for p in value.split(",") if p.strip()]
     if not parts:
         raise ValueError("--formats must not be empty")
