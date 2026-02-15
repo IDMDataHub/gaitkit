@@ -28,6 +28,10 @@ jobs:
           python -m pip install --upgrade pip build twine
           cd python
           python -m build
+          # First release path: publish source distribution only.
+          # The local wheel is tagged linux_x86_64 (non-manylinux) and can be
+          # rejected by PyPI. We can add cibuildwheel/manylinux wheels later.
+          rm -f dist/*.whl
           twine check dist/*
 
       - name: Upload artifacts
@@ -55,6 +59,7 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist
+          attestations: false
 
   publish-testpypi:
     name: Publish to TestPyPI (manual)
@@ -76,3 +81,4 @@ jobs:
         with:
           packages-dir: dist
           repository-url: https://test.pypi.org/legacy/
+          attestations: false
