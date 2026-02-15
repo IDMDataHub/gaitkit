@@ -10,6 +10,7 @@ C-accelerated backends, accessible from Python, R, and MATLAB.
 [![CRAN](https://img.shields.io/cran/v/gaitkit)](https://cran.r-project.org/package=gaitkit)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 -->
+[![CI](https://github.com/IDMDataHub/gaitkit/actions/workflows/ci.yml/badge.svg)](https://github.com/IDMDataHub/gaitkit/actions/workflows/ci.yml)
 
 ---
 
@@ -142,3 +143,8 @@ MIT -- see [LICENSE](LICENSE).
 ## Project Roadmap
 
 Publication/community readiness tasks are tracked in [TODO.md](TODO.md).
+
+## Community
+
+- Contribution guide: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Security policy: [SECURITY.md](SECURITY.md)
