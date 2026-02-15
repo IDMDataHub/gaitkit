@@ -181,8 +181,7 @@ _MODEL_CACHE = {}  # singleton cache for the loaded model
 _CACHE_DIR = Path.home() / ".cache" / "gaitkit"
 _DEFAULT_WEIGHT_PATH = _CACHE_DIR / "DeepEventWeight.h5"
 _WEIGHTS_URLS = [
-    "https://github.com/IDMDataHub/gaitkit/raw/master/assets/DeepEventWeight.h5",
-    "https://github.com/LempereurMat/deepevent/raw/master/deepevent/data/DeepEventWeight.h5",
+    "https://raw.githubusercontent.com/IDMDataHub/gaitkit/master/assets/DeepEventWeight.h5",
 ]
 
 
@@ -377,8 +376,8 @@ def _build_deepevent_model(weights_path: Optional[str] = None):
         raise RuntimeError(
             "DeepEvent weights are required but unavailable. "
             "Set GAITKIT_DEEPEVENT_WEIGHTS or place DeepEventWeight.h5 under "
-            "~/.cache/gaitkit/. Source: "
-            "https://github.com/IDMDataHub/gaitkit"
+            "~/.cache/gaitkit/. Source URL: "
+            "https://raw.githubusercontent.com/IDMDataHub/gaitkit/master/assets/DeepEventWeight.h5"
         )
 
     _MODEL_CACHE[cache_key] = model
