@@ -17,9 +17,9 @@ the maximum posterior position.
 """
 
 import numpy as np
-from typing import List, Tuple, Dict, Optional
+from typing import List, Tuple, Optional
 from dataclasses import dataclass
-from scipy.signal import find_peaks, savgol_filter, butter, filtfilt
+from scipy.signal import find_peaks
 from scipy.ndimage import gaussian_filter1d
 
 from .axis_utils import detect_axes, detect_walking_direction
@@ -127,6 +127,14 @@ class ZeniDetector:
 
     def __init__(self, fps: float = 100.0, min_cycle_duration: float = 0.4,
                  max_cycle_duration: float = 2.0, smooth_window: int = 5):
+        if fps <= 0:
+            raise ValueError("fps must be strictly positive")
+        if min_cycle_duration <= 0:
+            raise ValueError("min_cycle_duration must be strictly positive")
+        if max_cycle_duration <= 0:
+            raise ValueError("max_cycle_duration must be strictly positive")
+        if max_cycle_duration < min_cycle_duration:
+            raise ValueError("max_cycle_duration must be >= min_cycle_duration")
         self.fps = fps
         self.min_peak_distance = int(min_cycle_duration * fps / 2)
         self.max_peak_distance = int(max_cycle_duration * fps)
