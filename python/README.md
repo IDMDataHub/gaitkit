@@ -31,6 +31,7 @@ cached in `~/.cache/gaitkit/`.
 
 - Repository: https://github.com/IDMDataHub/gaitkit
 - Issue tracker: https://github.com/IDMDataHub/gaitkit/issues
+- Reproducibility: https://github.com/IDMDataHub/gaitkit/blob/master/REPRODUCIBILITY.md
 
 ## Development testing
 
