@@ -476,6 +476,10 @@ def detect_ensemble(
                     f"Invalid weight for method '{method_name}': {value!r}. "
                     "Weights must be finite numbers >= 0."
                 )
+    elif weights is not None:
+        raise ValueError(
+            "weights must be None, 'benchmark', or a dict of non-negative numeric weights"
+        )
 
     tolerance_frames = max(1, int(round(tolerance_ms * fps / 1000.0)))
 
