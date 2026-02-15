@@ -6,6 +6,8 @@ AngleFrame format used by all detectors, along with associated ground truth
 gait events.
 """
 
+from importlib import import_module
+
 from .base_extractor import BaseExtractor, ExtractionResult, AngleFrame, GroundTruth
 
 __all__ = [
@@ -18,8 +20,8 @@ __all__ = [
 
 def _optional_import(module_name, names):
     try:
-        mod = __import__(module_name, globals(), locals(), names, 1)
-    except Exception:
+        mod = import_module(module_name, package=__name__)
+    except ModuleNotFoundError:
         return
     for name in names:
         globals()[name] = getattr(mod, name)
