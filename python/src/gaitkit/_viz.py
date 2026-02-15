@@ -63,6 +63,11 @@ def plot_result(
         raise ValueError("result.fps must be strictly positive")
     if getattr(result, "n_frames", 0) <= 0:
         raise ValueError("result.n_frames must be strictly positive")
+    if signals is not None:
+        if not isinstance(signals, list) or not signals:
+            raise ValueError("signals must be a non-empty list of variable names")
+        if any(not isinstance(s, str) or not s.strip() for s in signals):
+            raise ValueError("signals must contain non-empty string names")
 
     plt = _import_mpl()
     af = result._angle_frames
