@@ -10,24 +10,16 @@ from scipy.signal import savgol_filter
 try:
     from gaitkit.native import _gait_native as _native_solver
     _HAS_NATIVE = True
-except Exception:
+except ImportError:
     _native_solver = None
     _HAS_NATIVE = False
 
-try:
-    from gaitkit.detectors.mickelborough_detector import (
-        MickelboroughDetector,
-        GaitEvent,
-        _build_cycles,
-    )
-    from gaitkit.detectors.axis_utils import detect_axes
-except Exception:
-    from gaitkit.detectors.mickelborough_detector import (
-        MickelboroughDetector,
-        GaitEvent,
-        _build_cycles,
-    )
-    from gaitkit.detectors.axis_utils import detect_axes
+from gaitkit.detectors.mickelborough_detector import (
+    MickelboroughDetector,
+    GaitEvent,
+    _build_cycles,
+)
+from gaitkit.detectors.axis_utils import detect_axes
 
 
 class MickelboroughNativeDetector(MickelboroughDetector):
