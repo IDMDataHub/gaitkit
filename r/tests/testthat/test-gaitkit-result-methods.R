@@ -35,6 +35,21 @@ test_that("print.gaitkit_result tolerates missing optional fields", {
   expect_invisible(print(x))
 })
 
+test_that("print.gaitkit_result tolerates malformed method field", {
+  x <- list(
+    left_hs = list(),
+    right_hs = list(),
+    left_to = list(),
+    right_to = list(),
+    cycles = data.frame(),
+    method = c("bike", "zeni"),
+    fps = 100,
+    n_frames = 10
+  )
+  class(x) <- "gaitkit_result"
+  expect_invisible(print(x))
+})
+
 test_that("summary.gaitkit_result validates input type", {
   expect_error(
     summary.gaitkit_result("not_a_result"),
