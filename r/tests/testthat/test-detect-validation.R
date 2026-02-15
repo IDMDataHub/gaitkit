@@ -16,6 +16,10 @@ test_that("gk_detect validates method and fps before Python bridge", {
     "'data' must be a list or a file path"
   )
   expect_error(
+    gk_detect("   ", method = "bike"),
+    "'data' must be a list or a file path"
+  )
+  expect_error(
     gk_detect(list(foo = 1), method = "bike"),
     "'data' list should contain at least 'angle_frames' or 'fps' fields"
   )
@@ -26,6 +30,10 @@ test_that("gk_detect_ensemble validates numeric controls before Python bridge", 
   expect_error(
     gk_detect_ensemble(dummy, methods = "bike"),
     "'methods' must be a character vector with at least two methods"
+  )
+  expect_error(
+    gk_detect_ensemble(dummy, methods = c("bike", "   ")),
+    "'methods' cannot contain empty entries"
   )
   expect_error(
     gk_detect_ensemble(dummy, methods = c("bike", "zeni"), min_votes = 0),
@@ -44,7 +52,26 @@ test_that("gk_detect_ensemble validates numeric controls before Python bridge", 
     "'data' must be a list or a file path"
   )
   expect_error(
+    gk_detect_ensemble("   ", methods = c("bike", "zeni")),
+    "'data' must be a list or a file path"
+  )
+  expect_error(
     gk_detect_ensemble(list(foo = 1), methods = c("bike", "zeni")),
     "'data' list should contain at least 'angle_frames' or 'fps' fields"
+  )
+})
+
+test_that("gk_load_example validates name before Python bridge", {
+  expect_error(
+    gk_load_example(""),
+    "'name' must be a non-empty character scalar"
+  )
+  expect_error(
+    gk_load_example("   "),
+    "'name' must be a non-empty character scalar"
+  )
+  expect_error(
+    gk_load_example(1),
+    "'name' must be a non-empty character scalar"
   )
 })
