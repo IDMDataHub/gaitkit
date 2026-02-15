@@ -185,8 +185,8 @@ class FukuchiExtractor(BaseExtractor):
                 elif label in ['LTO', 'LOFF']:  # Left toe off or left foot off
                     events['to_left'].append(frame)
 
-        except Exception as e:
-            pass  # No events
+        except Exception as exc:
+            logger.debug("No readable C3D EVENT entries: %s", exc)
 
         for key in events:
             events[key] = sorted(list(set(events[key])))  # Remove duplicates and sort
