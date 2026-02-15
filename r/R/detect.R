@@ -44,6 +44,9 @@ gk_methods <- function() {
 #'
 #' @export
 gk_detect <- function(data, method = "bike", fps = NULL) {
+  if (is.character(method) && length(method) == 1L) {
+    method <- trimws(method)
+  }
   if (!is.character(method) || length(method) != 1L || !nzchar(method)) {
     stop("'method' must be a non-empty character scalar", call. = FALSE)
   }
@@ -53,7 +56,7 @@ gk_detect <- function(data, method = "bike", fps = NULL) {
     }
   }
 
-  if (is.character(data) && length(data) == 1L && nzchar(data)) {
+  if (is.character(data) && length(data) == 1L && nzchar(trimws(data))) {
     py_data <- data
   } else if (is.list(data)) {
     if (!("angle_frames" %in% names(data)) && !("fps" %in% names(data))) {
@@ -104,6 +107,10 @@ gk_detect_ensemble <- function(data, methods = NULL, min_votes = 2L,
     if (!is.character(methods) || length(methods) < 2L) {
       stop("'methods' must be a character vector with at least two methods", call. = FALSE)
     }
+    methods <- trimws(methods)
+    if (any(!nzchar(methods))) {
+      stop("'methods' cannot contain empty entries", call. = FALSE)
+    }
   }
   if (!is.numeric(min_votes) || length(min_votes) != 1L || is.na(min_votes) || min_votes < 1) {
     stop("'min_votes' must be an integer >= 1", call. = FALSE)
@@ -117,7 +124,7 @@ gk_detect_ensemble <- function(data, methods = NULL, min_votes = 2L,
     }
   }
 
-  if (is.character(data) && length(data) == 1L && nzchar(data)) {
+  if (is.character(data) && length(data) == 1L && nzchar(trimws(data))) {
     py_data <- data
   } else if (is.list(data)) {
     if (!("angle_frames" %in% names(data)) && !("fps" %in% names(data))) {
@@ -159,6 +166,12 @@ gk_detect_ensemble <- function(data, methods = NULL, min_votes = 2L,
 #'
 #' @export
 gk_load_example <- function(name = "healthy") {
+  if (is.character(name) && length(name) == 1L) {
+    name <- trimws(name)
+  }
+  if (!is.character(name) || length(name) != 1L || !nzchar(name)) {
+    stop("'name' must be a non-empty character scalar", call. = FALSE)
+  }
   gk <- .gk_module()
   py_trial <- gk$load_example(name)
   reticulate::py_to_r(py_trial)
