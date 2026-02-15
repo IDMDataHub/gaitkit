@@ -21,8 +21,11 @@ import gaitkit
 
 
 def _load_payload(input_path: Path) -> Dict[str, Any]:
-    with input_path.open("r", encoding="utf-8") as f:
-        payload = json.load(f)
+    try:
+        with input_path.open("r", encoding="utf-8") as f:
+            payload = json.load(f)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Invalid JSON in {input_path}: {exc.msg}") from exc
     if not isinstance(payload, dict):
         raise ValueError("Input JSON must be an object")
     return payload
@@ -51,6 +54,25 @@ def _parse_formats(value: str) -> Sequence[str]:
     return parts
 
 
+def _normalize_units(units: Any) -> Dict[str, str]:
+    if units is None:
+        return {}
+    if not isinstance(units, dict):
+        raise ValueError("'units' must be a JSON object with optional keys 'position' and 'angles'")
+    out: Dict[str, str] = {}
+    if "position" in units:
+        pos = str(units["position"]).strip().lower()
+        if pos not in {"mm", "m"}:
+            raise ValueError("units.position must be 'mm' or 'm'")
+        out["position"] = pos
+    if "angles" in units:
+        ang = str(units["angles"]).strip().lower()
+        if ang not in {"deg", "rad"}:
+            raise ValueError("units.angles must be 'deg' or 'rad'")
+        out["angles"] = ang
+    return out
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run gaitkit on structured JSON frames.")
     parser.add_argument("--input", required=True, type=Path, help="Input JSON file path.")
@@ -75,17 +97,23 @@ def main() -> int:
     payload = _load_payload(args.input)
     method = args.method or str(payload.get("method", "bayesian_bis"))
     fps = float(args.fps if args.fps is not None else payload.get("fps", 100.0))
+    if fps <= 0:
+        raise ValueError("fps must be strictly positive")
     frames = payload.get("frames", [])
     if not isinstance(frames, list):
         raise ValueError("'frames' must be a JSON array")
 
-    units = payload.get("units", None)
-    if units is None:
-        units = {}
+    units = _normalize_units(payload.get("units", None))
     if args.position_unit is not None:
-        units["position"] = args.position_unit
+        pos = str(args.position_unit).strip().lower()
+        if pos not in {"mm", "m"}:
+            raise ValueError("--position-unit must be 'mm' or 'm'")
+        units["position"] = pos
     if args.angle_unit is not None:
-        units["angles"] = args.angle_unit
+        ang = str(args.angle_unit).strip().lower()
+        if ang not in {"deg", "rad"}:
+            raise ValueError("--angle-unit must be 'deg' or 'rad'")
+        units["angles"] = ang
 
     formats = _parse_formats(args.formats)
 
