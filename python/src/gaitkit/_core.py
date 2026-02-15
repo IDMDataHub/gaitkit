@@ -335,6 +335,8 @@ def _normalize_input(data, fps):
 
     # Case 1: string/Path → C3D file
     if isinstance(data, (str, Path)):
+        if isinstance(data, str) and not data.strip():
+            raise ValueError("data path must be a non-empty string")
         p = Path(data)
         if p.suffix.lower() == ".c3d":
             from ._io import load_c3d
