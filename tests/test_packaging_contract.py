@@ -21,6 +21,14 @@ class TestPackagingContract(unittest.TestCase):
         weights_path = PROJECT_ROOT / "assets" / "DeepEventWeight.h5"
         self.assertTrue(weights_path.exists(), "Expected DeepEvent weights in assets/")
 
+    def test_no_recursive_self_reference_in_all_extra(self):
+        pyproject = (PROJECT_ROOT / "python" / "pyproject.toml").read_text(encoding="utf-8")
+        self.assertNotIn("gaitkit[onnx,deep,viz,c3d]", pyproject)
+
+    def test_test_extra_is_declared(self):
+        pyproject = (PROJECT_ROOT / "python" / "pyproject.toml").read_text(encoding="utf-8")
+        self.assertIn("test = [", pyproject)
+
 
 if __name__ == "__main__":
     unittest.main()
