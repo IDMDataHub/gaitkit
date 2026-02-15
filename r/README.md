@@ -26,7 +26,7 @@ reticulate::use_python("/path/to/python", required = TRUE)
 In non-interactive sessions (CI, Rscript), exporting `RETICULATE_PYTHON`
 before starting R is the most reliable option.
 
-Reproducibility checklist: <https://github.com/IDMDataHub/gaitkit/blob/master/REPRODUCIBILITY.md>
+Reproducibility checklist: see `REPRODUCIBILITY.md` at repository root.
 
 ## Run tests
 

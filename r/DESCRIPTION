@@ -11,8 +11,7 @@ Description: Detect heel-strike and toe-off events from motion capture data
     voting, gait cycle extraction, and publication-ready visualisation.
     C-accelerated Python backend accessed through 'reticulate'.
 License: MIT + file LICENSE
-URL: https://github.com/IDMDataHub/gaitkit
-BugReports: https://github.com/IDMDataHub/gaitkit/issues
+URL: https://github.com/IDMDataHub
 Encoding: UTF-8
 Depends:
     R (>= 4.1.0)
