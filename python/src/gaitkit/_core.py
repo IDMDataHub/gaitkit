@@ -194,6 +194,8 @@ class GaitResult:
 
 def _resolve_method(name: str) -> str:
     """Map user-facing name to internal detector key."""
+    if not isinstance(name, str) or not name.strip():
+        raise ValueError("method must be a non-empty string")
     low = name.lower().strip()
     return _METHOD_ALIASES.get(low, low)
 
