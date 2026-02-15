@@ -65,3 +65,21 @@ Rscript -e "testthat::test_dir('r/tests/testthat', reporter='summary')"
 - Bundled regression file unchanged unless intentional algorithm updates.
 - Package metadata points to active repository and issue tracker.
 - Citation metadata (`CITATION.cff`) is present and up to date.
+
+## 7. Packaging checks (pre-release)
+
+Python sdist + wheel:
+
+```bash
+cd python
+python -m pip install build
+python -m build
+```
+
+R source package + check:
+
+```bash
+cd r
+R_LIBS_USER=/tmp/gaitkit-r-lib RETICULATE_PYTHON=/tmp/gaitkit-r-venv/bin/python R CMD build .
+R_LIBS_USER=/tmp/gaitkit-r-lib RETICULATE_PYTHON=/tmp/gaitkit-r-venv/bin/python R CMD check gaitkit_0.1.0.tar.gz --no-manual
+```
