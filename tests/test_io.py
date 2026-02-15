@@ -29,6 +29,7 @@ class TestLoadC3D(unittest.TestCase):
         self.assertEqual(_io.load_example("ParkinSon")["population"], base["population"])
         self.assertEqual(_io.load_example("par kin son")["population"], base["population"])
         self.assertEqual(_io.load_example("par-kin-son")["population"], base["population"])
+        self.assertEqual(_io.load_example("par\tkin\nson")["population"], base["population"])
 
     def test_load_c3d_rejects_missing_or_invalid_path_before_import(self):
         with self.assertRaises(ValueError):
