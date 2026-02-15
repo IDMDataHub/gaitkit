@@ -50,6 +50,13 @@ class TestCliHelpers(unittest.TestCase):
         with self.assertRaises(ValueError):
             cli._normalize_units({"angles": "grad"})
 
+    def test_normalize_method_validates_non_empty_input(self):
+        self.assertEqual(cli._normalize_method(" bike "), "bike")
+        with self.assertRaises(ValueError):
+            cli._normalize_method("")
+        with self.assertRaises(ValueError):
+            cli._normalize_method(None)
+
 
 if __name__ == "__main__":
     unittest.main()
