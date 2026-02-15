@@ -36,11 +36,14 @@ import numpy as np
 from pathlib import Path
 from typing import List, Dict, Optional
 import re
+import logging
 
 from .base_extractor import (
     BaseExtractor, ExtractionResult, AngleFrame, GroundTruth,
     compute_angle_from_3points
 )
+
+logger = logging.getLogger(__name__)
 
 try:
     import ezc3d
@@ -253,8 +256,8 @@ class KuopioOpenPoseExtractor(BaseExtractor):
                     events[key].append(video_frame)
                 events[key] = sorted(events[key])
 
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Failed to extract C3D events from %s: %s", c3d_path, exc)
 
         return events
 
@@ -284,10 +287,15 @@ class KuopioOpenPoseExtractor(BaseExtractor):
                 c3d = ezc3d.c3d(str(c3d_path))
                 mocap_fps = c3d['parameters']['POINT']['RATE']['value'][0]
                 mocap_frames = c3d['data']['points'].shape[2]
-                mocap_duration = mocap_frames / mocap_fps
-                video_fps = n_frames / mocap_duration
-            except Exception:
-                pass
+                if mocap_fps > 0 and mocap_frames > 0:
+                    mocap_duration = mocap_frames / mocap_fps
+                    if mocap_duration > 0:
+                        video_fps = n_frames / mocap_duration
+            except Exception as exc:
+                logger.debug("Failed to infer video fps from %s: %s", c3d_path, exc)
+
+        if video_fps <= 0:
+            video_fps = 15.0
 
         duration_s = n_frames / video_fps
 
