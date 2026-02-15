@@ -213,7 +213,9 @@ def _normalize_methods(methods: Sequence[str]) -> List[str]:
     out: List[str] = []
     seen = set()
     for method in methods:
-        raw = str(method).lower().strip()
+        if not isinstance(method, str):
+            raise ValueError("methods must contain only string method names")
+        raw = method.lower().strip()
         if not raw:
             raise ValueError("methods cannot contain empty entries")
         key = _METHOD_ALIASES.get(raw, raw)
