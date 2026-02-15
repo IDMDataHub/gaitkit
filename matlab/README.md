@@ -20,6 +20,7 @@ If `method` is omitted or empty, `bayesian_bis` is used by default.
 
 ```matlab
 gaitkit.installPythonBackend();
+gaitkit.installPythonBackend("gaitkit[all]"); % optional extras
 ```
 
 If installation fails, the wrapper now reports full `pip` output to help
