@@ -1,5 +1,6 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
+#include <limits.h>
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -217,6 +218,12 @@ static int parse_int_seq(PyObject *obj, int **out, Py_ssize_t *n_out) {
         if (PyErr_Occurred()) {
             PyMem_Free(arr);
             Py_DECREF(seq);
+            return 0;
+        }
+        if (v < INT_MIN || v > INT_MAX) {
+            PyMem_Free(arr);
+            Py_DECREF(seq);
+            PyErr_SetString(PyExc_OverflowError, "int value out of range for native solver");
             return 0;
         }
         arr[i] = (int)v;
