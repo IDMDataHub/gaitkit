@@ -18,6 +18,8 @@ reticulate::use_python("/path/to/python", required = TRUE)
 
 # Ensure the Python backend is installed in that interpreter
 gaitkit::gk_install_python()
+# Optional extras (onnx, deep, viz, c3d)
+gaitkit::gk_install_python(package = "gaitkit[all]")
 ```
 
 ## Quick start
