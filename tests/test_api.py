@@ -94,6 +94,18 @@ class TestDetect(unittest.TestCase):
         with self.assertRaises(ValueError):
             gaitkit.detect(self.trial, method="nonexistent")
 
+    def test_invalid_fps_rejected(self):
+        with self.assertRaises(ValueError):
+            gaitkit.detect(self.trial, fps=0)
+
+    def test_empty_angle_frames_rejected(self):
+        with self.assertRaises(ValueError):
+            gaitkit.detect({"angle_frames": [], "fps": 100.0}, method="bike")
+
+    def test_list_input_requires_positive_fps(self):
+        with self.assertRaises(ValueError):
+            gaitkit.detect([], method="bike", fps=100.0)
+
 
 class TestDetectAllMethods(unittest.TestCase):
     @classmethod
