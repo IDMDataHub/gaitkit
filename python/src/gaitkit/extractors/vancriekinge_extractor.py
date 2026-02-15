@@ -152,7 +152,7 @@ class VanCriekingeExtractor(BaseExtractor):
                     if not np.any(np.isnan(pos)) and np.linalg.norm(pos) > 0:
                         return pos
             return None
-        except Exception:
+        except (KeyError, IndexError, TypeError, ValueError):
             return None
 
     def _find_landmark(self, c3d_data, landmark: str, frame: int) -> Optional[np.ndarray]:
@@ -181,7 +181,7 @@ class VanCriekingeExtractor(BaseExtractor):
                     if not np.isnan(val):
                         return float(val)
             return None
-        except Exception:
+        except (KeyError, IndexError, TypeError, ValueError):
             return None
 
     def _extract_events(self, c3d_data) -> Dict[str, List[int]]:
