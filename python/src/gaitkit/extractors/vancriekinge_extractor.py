@@ -233,8 +233,8 @@ class VanCriekingeExtractor(BaseExtractor):
                 elif 'OFF' in label_upper or 'TO' in label_upper:
                     events[f'to_{side}'].append(frame)
 
-        except Exception:
-            pass  # No events in this file
+        except Exception as exc:
+            logger.debug("No readable C3D EVENT entries for %s", exc)
 
         for key in events:
             events[key] = sorted(list(set(events[key])))
