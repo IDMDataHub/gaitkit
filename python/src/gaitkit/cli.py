@@ -42,6 +42,12 @@ def _parse_formats(value: str) -> Sequence[str]:
     parts = [p.strip().lower() for p in value.split(",") if p.strip()]
     if not parts:
         raise ValueError("--formats must not be empty")
+    allowed = {"json", "csv", "xlsx"}
+    unknown = [p for p in parts if p not in allowed]
+    if unknown:
+        raise ValueError(f"Unknown format(s): {unknown}. Allowed: {sorted(allowed)}")
+    # Preserve user order while removing duplicates.
+    parts = list(dict.fromkeys(parts))
     return parts
 
 
@@ -70,6 +76,8 @@ def main() -> int:
     method = args.method or str(payload.get("method", "bayesian_bis"))
     fps = float(args.fps if args.fps is not None else payload.get("fps", 100.0))
     frames = payload.get("frames", [])
+    if not isinstance(frames, list):
+        raise ValueError("'frames' must be a JSON array")
 
     units = payload.get("units", None)
     if units is None:
