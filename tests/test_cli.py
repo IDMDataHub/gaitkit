@@ -23,6 +23,8 @@ class TestCliHelpers(unittest.TestCase):
     def test_parse_formats_rejects_unknown_values(self):
         with self.assertRaises(ValueError):
             cli._parse_formats("json,xml")
+        with self.assertRaises(ValueError):
+            cli._parse_formats(1)  # type: ignore[arg-type]
 
     def test_load_payload_requires_object(self):
         with tempfile.TemporaryDirectory() as tmp:
