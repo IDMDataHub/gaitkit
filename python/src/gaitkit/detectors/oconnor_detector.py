@@ -17,10 +17,9 @@ velocity -- the fastest ascent at lift-off.
 """
 
 import numpy as np
-from typing import List, Tuple, Dict, Optional
+from typing import List, Tuple, Optional
 from dataclasses import dataclass
-from scipy.signal import find_peaks, savgol_filter, butter, filtfilt
-from scipy.ndimage import gaussian_filter1d
+from scipy.signal import find_peaks, savgol_filter
 
 from .axis_utils import detect_axes
 
@@ -122,6 +121,10 @@ class OConnorDetector:
 
     def __init__(self, fps: float = 100.0, smooth_window: int = 7,
                  min_cycle_duration: float = 0.4):
+        if fps <= 0:
+            raise ValueError("fps must be strictly positive")
+        if min_cycle_duration <= 0:
+            raise ValueError("min_cycle_duration must be strictly positive")
         self.fps = fps
         self.smooth_window = smooth_window if smooth_window % 2 == 1 else smooth_window + 1
         self.min_interval = int(min_cycle_duration * fps / 2)
