@@ -35,5 +35,5 @@ end
 methods = gaitkit.listMethods();
 disp(methods);
 
-result = gaitkit.detect('bayesian_bis', frames, 100, struct('position','mm','angles','deg'));
+result = gaitkit.detect('bike', frames, 100, struct('position','mm','angles','deg'));
 disp(result);
