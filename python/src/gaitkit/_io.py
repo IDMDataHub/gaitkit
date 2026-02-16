@@ -343,7 +343,11 @@ def _signed_angle_deg(v1, v2) -> float:
     return -ang if cross < 0 else ang
 
 
-def compute_marker_proxy_angles(angle_frames: Sequence[Mapping[str, object]]) -> Dict[str, List[float]]:
+def compute_marker_proxy_angles(
+    angle_frames: Sequence[Mapping[str, object]],
+    *,
+    profile: str = "default",
+) -> Dict[str, List[float]]:
     """Compute proxy sagittal angles from landmark positions.
 
     This function is designed for sanity-checking against external angle exports.
@@ -378,6 +382,15 @@ def compute_marker_proxy_angles(angle_frames: Sequence[Mapping[str, object]]) ->
         dy = abs(last[1] - first[1])
         prog_axis = 0 if dx >= dy else 1
     vert_axis = 2
+    # For IMY/VICON exports used in our validation set, hip and knee flexion
+    # are best represented on X-Z, while ankle dorsi/plantar flexion is more
+    # stable on Y-Z.
+    if profile == "imy":
+        hk_axis = 0
+        ankle_axis = 1
+    else:
+        hk_axis = prog_axis
+        ankle_axis = prog_axis
 
     out = {k: [] for k in _ANGLE_KEYS}
 
@@ -396,18 +409,18 @@ def compute_marker_proxy_angles(angle_frames: Sequence[Mapping[str, object]]) ->
     for fr in angle_frames:
         lp = fr.get("landmark_positions") or {}
 
-        def p2(name):
+        def p2(name, axis):
             if name not in lp:
                 return None
             p = lp[name]
-            return np.array([float(p[prog_axis]), float(p[vert_axis])], dtype=float)
+            return np.array([float(p[axis]), float(p[vert_axis])], dtype=float)
 
         for side in ("left", "right"):
-            hip = p2(f"{side}_hip")
-            knee = p2(f"{side}_knee")
-            ankle = p2(f"{side}_ankle")
-            toe = p2(f"{side}_toe")
-            sacrum = p2("sacrum")
+            hip = p2(f"{side}_hip", hk_axis)
+            knee = p2(f"{side}_knee", hk_axis)
+            ankle = p2(f"{side}_ankle", hk_axis)
+            toe = p2(f"{side}_toe", ankle_axis)
+            sacrum = p2("sacrum", hk_axis)
 
             # Knee flexion proxy: 180 - angle(HIP-KNEE-ANKLE)
             if hip is not None and knee is not None and ankle is not None:
@@ -425,11 +438,18 @@ def compute_marker_proxy_angles(angle_frames: Sequence[Mapping[str, object]]) ->
 
             # Ankle proxy (VICON-like 2D projection):
             # intersection between shank line and foot line, then 90 - angle.
-            heel = p2(f"{side}_heel")
-            if knee is not None and ankle is not None and toe is not None and heel is not None:
-                ip = _line_intersection(knee, ankle, heel, toe)
+            heel = p2(f"{side}_heel", ankle_axis)
+            ankle_for_ankle = p2(f"{side}_ankle", ankle_axis)
+            knee_for_ankle = p2(f"{side}_knee", ankle_axis)
+            if (
+                knee_for_ankle is not None
+                and ankle_for_ankle is not None
+                and toe is not None
+                and heel is not None
+            ):
+                ip = _line_intersection(knee_for_ankle, ankle_for_ankle, heel, toe)
                 if ip is not None:
-                    v1 = knee - ip
+                    v1 = knee_for_ankle - ip
                     v2 = toe - ip
                     n1 = np.linalg.norm(v1)
                     n2 = np.linalg.norm(v2)
@@ -516,7 +536,10 @@ def verify_angles_against_external(
     trial = load_c3d(str(c3d_path), marker_set=marker_set)
     n = int(trial["n_frames"])
     angle_frames = trial["angle_frames"]
-    computed = compute_marker_proxy_angles(angle_frames)
+    computed = {k: [] for k in _ANGLE_KEYS}
+    for fr in angle_frames:
+        for key in _ANGLE_KEYS:
+            computed[key].append(float(fr.get(key, float("nan"))))
     external_raw = load_angles_file(angles, n_frames=None)
 
     hs_frames = _extract_hs_frames_from_c3d(c3d_path, fps_hint=float(trial["fps"]))
@@ -563,6 +586,7 @@ def verify_angles_against_external(
         "external_length": {k: len(v) for k, v in external_raw.items()},
         "hs_frames": hs_frames,
         "alignment_start_frame": int(start),
+        "proxy_profile": trial.get("proxy_profile", "default"),
         "metrics": metrics,
     }
 
@@ -802,7 +826,8 @@ def load_c3d(
         # sagittal angles directly from marker geometry.
         import numpy as np
 
-        proxy = compute_marker_proxy_angles(angle_frames)
+        proxy_profile = "imy" if marker_set == "imy" else "default"
+        proxy = compute_marker_proxy_angles(angle_frames, profile=proxy_profile)
         for key, series in proxy.items():
             if len(series) != n_frames:
                 continue
@@ -820,5 +845,6 @@ def load_c3d(
         "angle_frames": angle_frames,
         "fps": fps,
         "n_frames": n_frames,
+        "proxy_profile": proxy_profile if angles is None else "external_override",
         "source_file": str(c3d_path),
     }
