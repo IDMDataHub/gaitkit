@@ -208,7 +208,7 @@ def _norm_key(name: str) -> str:
     return "".join(ch for ch in name.lower() if ch.isalnum())
 
 
-def _extract_1d_angle(values, n_frames: int) -> Optional[List[float]]:
+def _extract_1d_angle(values, n_frames: Optional[int]) -> Optional[List[float]]:
     try:
         import numpy as np
     except ImportError:  # pragma: no cover
@@ -227,12 +227,14 @@ def _extract_1d_angle(values, n_frames: int) -> Optional[List[float]]:
     n_src = int(series.shape[0])
     if n_src <= 0:
         return None
-    if n_src == n_frames:
+    if n_frames is None or n_src == n_frames:
         return series.tolist()
-    if n_src == 1:
+    if n_frames is not None and n_src == 1:
         return [float(series[0])] * n_frames
     # Robust fallback for mismatched lengths (cropped/segmented exports):
     # resample on normalized time [0, 1] to match C3D frame count.
+    if n_frames is None:
+        return series.tolist()
     x_old = np.linspace(0.0, 1.0, num=n_src)
     x_new = np.linspace(0.0, 1.0, num=n_frames)
     out = np.interp(x_new, x_old, series)
@@ -244,7 +246,9 @@ def _extract_1d_angle(values, n_frames: int) -> Optional[List[float]]:
     return out.tolist()
 
 
-def _load_angles_from_mapping(angles: Mapping[str, Sequence[float]], n_frames: int) -> Dict[str, List[float]]:
+def _load_angles_from_mapping(
+    angles: Mapping[str, Sequence[float]], n_frames: Optional[int]
+) -> Dict[str, List[float]]:
     out: Dict[str, List[float]] = {}
     keyed = {_norm_key(k): v for k, v in angles.items()}
     for target in _ANGLE_KEYS:
@@ -259,7 +263,7 @@ def _load_angles_from_mapping(angles: Mapping[str, Sequence[float]], n_frames: i
     return out
 
 
-def _load_angles_from_mat(path: Path, n_frames: int) -> Dict[str, List[float]]:
+def _load_angles_from_mat(path: Path, n_frames: Optional[int]) -> Dict[str, List[float]]:
     from scipy.io import loadmat
 
     mat = loadmat(str(path))
@@ -286,14 +290,14 @@ def _load_angles_from_mat(path: Path, n_frames: int) -> Dict[str, List[float]]:
     return _load_angles_from_mapping(mat, n_frames)
 
 
-def _load_angles_from_csv(path: Path, n_frames: int) -> Dict[str, List[float]]:
+def _load_angles_from_csv(path: Path, n_frames: Optional[int]) -> Dict[str, List[float]]:
     import pandas as pd
 
     df = pd.read_csv(path)
     return _load_angles_from_mapping(df.to_dict(orient="list"), n_frames)
 
 
-def _load_angles_from_json(path: Path, n_frames: int) -> Dict[str, List[float]]:
+def _load_angles_from_json(path: Path, n_frames: Optional[int]) -> Dict[str, List[float]]:
     with open(path, encoding="utf-8") as f:
         payload = json.load(f)
     if not isinstance(payload, Mapping):
@@ -301,7 +305,7 @@ def _load_angles_from_json(path: Path, n_frames: int) -> Dict[str, List[float]]:
     return _load_angles_from_mapping(payload, n_frames)
 
 
-def load_angles_file(angles: AnglesLike, n_frames: int) -> Dict[str, List[float]]:
+def load_angles_file(angles: AnglesLike, n_frames: Optional[int] = None) -> Dict[str, List[float]]:
     """Load external joint-angle series from MAT/CSV/JSON or in-memory mapping.
 
     Returns a dict with canonical keys:
@@ -322,6 +326,217 @@ def load_angles_file(angles: AnglesLike, n_frames: int) -> Dict[str, List[float]
     if suffix in {".json"}:
         return _load_angles_from_json(p, n_frames)
     raise ValueError(f"Unsupported angle file format: {suffix or '<none>'}")
+
+
+def _signed_angle_deg(v1, v2) -> float:
+    import numpy as np
+
+    n1 = np.linalg.norm(v1)
+    n2 = np.linalg.norm(v2)
+    if n1 == 0.0 or n2 == 0.0:
+        return float("nan")
+    a = v1 / n1
+    b = v2 / n2
+    dot = float(np.clip(np.dot(a, b), -1.0, 1.0))
+    ang = float(np.degrees(np.arccos(dot)))
+    cross = a[0] * b[1] - a[1] * b[0]
+    return -ang if cross < 0 else ang
+
+
+def compute_marker_proxy_angles(angle_frames: Sequence[Mapping[str, object]]) -> Dict[str, List[float]]:
+    """Compute proxy sagittal angles from landmark positions.
+
+    This function is designed for sanity-checking against external angle exports.
+    It does not claim strict clinical equivalence with VICON model-based kinematics.
+    """
+    import numpy as np
+
+    if not angle_frames:
+        return {k: [] for k in _ANGLE_KEYS}
+
+    # Progression axis from heel displacement (same principle as IntellEvent).
+    def _coord(frame, name):
+        lp = frame.get("landmark_positions")
+        if not lp or name not in lp:
+            return None
+        p = lp[name]
+        return np.array([float(p[0]), float(p[1]), float(p[2])], dtype=float)
+
+    first = None
+    last = None
+    for fr in angle_frames:
+        p = _coord(fr, "left_heel")
+        if p is None:
+            p = _coord(fr, "right_heel")
+        if p is not None:
+            if first is None:
+                first = p
+            last = p
+    prog_axis = 0
+    if first is not None and last is not None:
+        dx = abs(last[0] - first[0])
+        dy = abs(last[1] - first[1])
+        prog_axis = 0 if dx >= dy else 1
+    vert_axis = 2
+
+    out = {k: [] for k in _ANGLE_KEYS}
+
+    for fr in angle_frames:
+        lp = fr.get("landmark_positions") or {}
+
+        def p2(name):
+            if name not in lp:
+                return None
+            p = lp[name]
+            return np.array([float(p[prog_axis]), float(p[vert_axis])], dtype=float)
+
+        for side in ("left", "right"):
+            hip = p2(f"{side}_hip")
+            knee = p2(f"{side}_knee")
+            ankle = p2(f"{side}_ankle")
+            toe = p2(f"{side}_toe")
+            sacrum = p2("sacrum")
+
+            # Knee flexion proxy: 180 - angle(HIP-KNEE-ANKLE)
+            if hip is not None and knee is not None and ankle is not None:
+                v1 = hip - knee
+                v2 = ankle - knee
+                n1 = np.linalg.norm(v1)
+                n2 = np.linalg.norm(v2)
+                if n1 > 0 and n2 > 0:
+                    ang = np.degrees(np.arccos(np.clip(np.dot(v1, v2) / (n1 * n2), -1.0, 1.0)))
+                    out[f"{side}_knee_angle"].append(float(180.0 - ang))
+                else:
+                    out[f"{side}_knee_angle"].append(float("nan"))
+            else:
+                out[f"{side}_knee_angle"].append(float("nan"))
+
+            # Ankle proxy: angle(KNEE-ANKLE-TOE) - 90
+            if knee is not None and ankle is not None and toe is not None:
+                v1 = knee - ankle
+                v2 = toe - ankle
+                n1 = np.linalg.norm(v1)
+                n2 = np.linalg.norm(v2)
+                if n1 > 0 and n2 > 0:
+                    ang = np.degrees(np.arccos(np.clip(np.dot(v1, v2) / (n1 * n2), -1.0, 1.0)))
+                    out[f"{side}_ankle_angle"].append(float(ang - 90.0))
+                else:
+                    out[f"{side}_ankle_angle"].append(float("nan"))
+            else:
+                out[f"{side}_ankle_angle"].append(float("nan"))
+
+            # Hip proxy: signed angle between trunk (SACR-HIP) and thigh (KNEE-HIP)
+            if sacrum is not None and hip is not None and knee is not None:
+                trunk = sacrum - hip
+                thigh = knee - hip
+                out[f"{side}_hip_angle"].append(_signed_angle_deg(trunk, thigh))
+            else:
+                out[f"{side}_hip_angle"].append(float("nan"))
+
+    return out
+
+
+def _extract_hs_frames_from_c3d(path: Union[str, Path], fps_hint: Optional[float] = None) -> List[int]:
+    import numpy as np
+    import ezc3d
+
+    c3d = ezc3d.c3d(str(path))
+    fps = float(fps_hint or c3d["header"]["points"]["frame_rate"])
+    ev = c3d.get("parameters", {}).get("EVENT", {})
+    labels = [str(x).strip() for x in ev.get("LABELS", {}).get("value", [])]
+    contexts = [str(x).strip() for x in ev.get("CONTEXTS", {}).get("value", [])]
+    raw_times = np.array(ev.get("TIMES", {}).get("value", []), dtype=float)
+    if raw_times.size == 0 or not labels:
+        return []
+    if raw_times.ndim == 2 and raw_times.shape[0] == 2:
+        times = (raw_times[0, :] * 60.0 + raw_times[1, :]).tolist()
+    else:
+        times = raw_times.reshape(-1).tolist()
+
+    hs = []
+    for i, lab in enumerate(labels):
+        lab_low = lab.lower()
+        if "foot strike" in lab_low or "heel strike" in lab_low or lab_low in {"hs", "h.s."}:
+            if i < len(times):
+                hs.append(int(round(float(times[i]) * fps)))
+    hs = sorted(set(hs))
+    return hs
+
+
+def verify_angles_against_external(
+    c3d_path: Union[str, Path],
+    angles: AnglesLike,
+    *,
+    marker_set: str = "auto",
+    align_start: str = "second_hs",
+) -> Dict[str, object]:
+    """Compare marker-derived proxy angles against external angle series.
+
+    Parameters
+    ----------
+    c3d_path : str or Path
+        Input C3D file.
+    angles : path or mapping
+        External angles (MAT/CSV/JSON or dict).
+    marker_set : str
+        Marker set preset for C3D loading.
+    align_start : {"second_hs", "first_hs", "none"}
+        How to place external angle frame 0 on the C3D timeline.
+    """
+    import numpy as np
+
+    trial = load_c3d(str(c3d_path), marker_set=marker_set)
+    n = int(trial["n_frames"])
+    angle_frames = trial["angle_frames"]
+    computed = compute_marker_proxy_angles(angle_frames)
+    external_raw = load_angles_file(angles, n_frames=None)
+
+    hs_frames = _extract_hs_frames_from_c3d(c3d_path, fps_hint=float(trial["fps"]))
+    if align_start == "second_hs":
+        start = hs_frames[1] if len(hs_frames) >= 2 else (hs_frames[0] if hs_frames else 0)
+    elif align_start == "first_hs":
+        start = hs_frames[0] if hs_frames else 0
+    elif align_start == "none":
+        start = 0
+    else:
+        raise ValueError("align_start must be 'second_hs', 'first_hs', or 'none'")
+
+    metrics = {}
+    for key in _ANGLE_KEYS:
+        c = np.array(computed.get(key, []), dtype=float)
+        ext_src = np.array(external_raw.get(key, []), dtype=float)
+        if c.size == 0 or ext_src.size == 0:
+            metrics[key] = {"n": 0, "rmse": None, "mae": None, "bias": None, "corr": None}
+            continue
+
+        ext = np.full(n, np.nan, dtype=float)
+        end = min(n, start + ext_src.size)
+        if end > start:
+            ext[start:end] = ext_src[: end - start]
+        valid = np.isfinite(c) & np.isfinite(ext)
+        if not np.any(valid):
+            metrics[key] = {"n": 0, "rmse": None, "mae": None, "bias": None, "corr": None}
+            continue
+        d = c[valid] - ext[valid]
+        rmse = float(np.sqrt(np.mean(d ** 2)))
+        mae = float(np.mean(np.abs(d)))
+        bias = float(np.mean(d))
+        corr = None
+        if np.sum(valid) >= 3:
+            with np.errstate(invalid="ignore"):
+                cc = np.corrcoef(c[valid], ext[valid])[0, 1]
+            if np.isfinite(cc):
+                corr = float(cc)
+        metrics[key] = {"n": int(np.sum(valid)), "rmse": rmse, "mae": mae, "bias": bias, "corr": corr}
+
+    return {
+        "fps": float(trial["fps"]),
+        "n_frames_c3d": n,
+        "external_length": {k: len(v) for k, v in external_raw.items()},
+        "hs_frames": hs_frames,
+        "alignment_start_frame": int(start),
+        "metrics": metrics,
+    }
 
 
 # ── C3D loading ──────────────────────────────────────────────────────
