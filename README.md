@@ -15,7 +15,7 @@ C-accelerated backends, accessible from Python, R, and MATLAB.
 
 ## Installation
 
-Current status: pre-release (not yet submitted to PyPI/CRAN).
+Current status: PyPI release available (`gaitkit==0.1.0`), CRAN submission in progress.
 
 **Install from local source (recommended for now)**
 

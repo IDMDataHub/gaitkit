@@ -1,7 +1,7 @@
 # gaitkit (R interface)
 
 This package exposes the Python `gaitkit` backend in R via `reticulate`.
-Current status: pre-release (not yet submitted to CRAN).
+Current status: CRAN submission in progress.
 
 ## Install (development)
 
