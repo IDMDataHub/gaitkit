@@ -7,6 +7,7 @@ import unittest
 import urllib.error
 from pathlib import Path
 from unittest import mock
+import os
 
 import sys
 
@@ -35,7 +36,15 @@ class TestDeepEventWeightsHelpers(unittest.TestCase):
 
     def test_default_cache_path_location(self):
         self.assertEqual(dd._DEFAULT_WEIGHT_PATH.name, "DeepEventWeight.h5")
-        self.assertIn(".cache", str(dd._DEFAULT_WEIGHT_PATH))
+        self.assertTrue(
+            (".cache" in str(dd._DEFAULT_WEIGHT_PATH)) or ("/tmp/" in str(dd._DEFAULT_WEIGHT_PATH))
+        )
+
+    def test_resolve_cache_dir_prefers_env_var(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with mock.patch.dict(os.environ, {"GAITKIT_CACHE_DIR": tmp}):
+                cache_dir = dd._resolve_cache_dir()
+        self.assertEqual(str(cache_dir), tmp)
 
     def test_hdf5_signature_missing_file_returns_false(self):
         missing = Path(tempfile.gettempdir()) / "does_not_exist_deepevent.h5"
@@ -108,6 +117,13 @@ class TestDeepEventWeightsHelpers(unittest.TestCase):
                     out = dd._download_deepevent_weights(target)
             self.assertIsNone(out)
             self.assertFalse(target.exists())
+
+    def test_download_weights_returns_none_if_cache_dir_creation_fails(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "nested" / "DeepEventWeight.h5"
+            with mock.patch("pathlib.Path.mkdir", side_effect=OSError("permission denied")):
+                out = dd._download_deepevent_weights(target)
+            self.assertIsNone(out)
 
 
 if __name__ == "__main__":

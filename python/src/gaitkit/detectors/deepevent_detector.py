@@ -178,7 +178,37 @@ def _apply_rotation(positions: np.ndarray, rot: np.ndarray,
 # ---------------------------------------------------------------------------
 
 _MODEL_CACHE = {}  # singleton cache for the loaded model
-_CACHE_DIR = Path.home() / ".cache" / "gaitkit"
+
+
+def _resolve_cache_dir() -> Path:
+    """Return a writable cache directory for model weights.
+
+    Priority:
+    1. ``GAITKIT_CACHE_DIR`` env var
+    2. ``~/.cache/gaitkit`` (default)
+    3. ``<tmp>/gaitkit`` fallback when home cache is not writable
+    """
+    candidates = []
+    env_dir = os.getenv("GAITKIT_CACHE_DIR")
+    if env_dir:
+        candidates.append(Path(env_dir))
+    candidates.append(Path.home() / ".cache" / "gaitkit")
+    candidates.append(Path(tempfile.gettempdir()) / "gaitkit")
+
+    for candidate in candidates:
+        try:
+            candidate.mkdir(parents=True, exist_ok=True)
+            return candidate
+        except OSError as exc:
+            logger.warning("Could not create gaitkit cache directory '%s': %s", candidate, exc)
+
+    # Last-resort local directory (should almost never happen).
+    fallback = Path(".gaitkit_cache")
+    fallback.mkdir(parents=True, exist_ok=True)
+    return fallback
+
+
+_CACHE_DIR = _resolve_cache_dir()
 _DEFAULT_WEIGHT_PATH = _CACHE_DIR / "DeepEventWeight.h5"
 _WEIGHTS_URLS = [
     "https://raw.githubusercontent.com/IDMDataHub/gaitkit/master/assets/DeepEventWeight.h5",
@@ -195,7 +225,11 @@ def _is_hdf5_file(path: Path) -> bool:
 
 def _download_deepevent_weights(target_path: Path) -> Optional[Path]:
     """Download DeepEvent weights to the local cache if possible."""
-    target_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        logger.warning("Could not create target cache directory '%s': %s", target_path.parent, exc)
+        return None
 
     for url in _WEIGHTS_URLS:
         logger.warning(
