@@ -4,7 +4,7 @@ Python package for gait event detection from motion-capture data.
 
 ## Install
 
-Current status: PyPI release available (`gaitkit==0.1.0`).
+Current status: PyPI release available (latest stable on PyPI).
 
 Install from local source:
 
