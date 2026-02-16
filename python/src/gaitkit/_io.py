@@ -381,6 +381,18 @@ def compute_marker_proxy_angles(angle_frames: Sequence[Mapping[str, object]]) ->
 
     out = {k: [] for k in _ANGLE_KEYS}
 
+    def _line_intersection(p1, p2, p3, p4):
+        x1, y1 = float(p1[0]), float(p1[1])
+        x2, y2 = float(p2[0]), float(p2[1])
+        x3, y3 = float(p3[0]), float(p3[1])
+        x4, y4 = float(p4[0]), float(p4[1])
+        den = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
+        if den == 0.0:
+            return None
+        px = ((x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4)) / den
+        py = ((x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4)) / den
+        return np.array([px, py], dtype=float)
+
     for fr in angle_frames:
         lp = fr.get("landmark_positions") or {}
 
@@ -411,15 +423,21 @@ def compute_marker_proxy_angles(angle_frames: Sequence[Mapping[str, object]]) ->
             else:
                 out[f"{side}_knee_angle"].append(float("nan"))
 
-            # Ankle proxy: angle(KNEE-ANKLE-TOE) - 90
-            if knee is not None and ankle is not None and toe is not None:
-                v1 = knee - ankle
-                v2 = toe - ankle
-                n1 = np.linalg.norm(v1)
-                n2 = np.linalg.norm(v2)
-                if n1 > 0 and n2 > 0:
-                    ang = np.degrees(np.arccos(np.clip(np.dot(v1, v2) / (n1 * n2), -1.0, 1.0)))
-                    out[f"{side}_ankle_angle"].append(float(ang - 90.0))
+            # Ankle proxy (VICON-like 2D projection):
+            # intersection between shank line and foot line, then 90 - angle.
+            heel = p2(f"{side}_heel")
+            if knee is not None and ankle is not None and toe is not None and heel is not None:
+                ip = _line_intersection(knee, ankle, heel, toe)
+                if ip is not None:
+                    v1 = knee - ip
+                    v2 = toe - ip
+                    n1 = np.linalg.norm(v1)
+                    n2 = np.linalg.norm(v2)
+                    if n1 > 0 and n2 > 0:
+                        ang = np.degrees(np.arccos(np.clip(np.dot(v1, v2) / (n1 * n2), -1.0, 1.0)))
+                        out[f"{side}_ankle_angle"].append(float(90.0 - ang))
+                    else:
+                        out[f"{side}_ankle_angle"].append(float("nan"))
                 else:
                     out[f"{side}_ankle_angle"].append(float("nan"))
             else:
@@ -429,9 +447,19 @@ def compute_marker_proxy_angles(angle_frames: Sequence[Mapping[str, object]]) ->
             if sacrum is not None and hip is not None and knee is not None:
                 trunk = sacrum - hip
                 thigh = knee - hip
-                out[f"{side}_hip_angle"].append(_signed_angle_deg(trunk, thigh))
+                out[f"{side}_hip_angle"].append(float(-_signed_angle_deg(trunk, thigh)))
             else:
                 out[f"{side}_hip_angle"].append(float("nan"))
+
+    # Re-center each signal to a neutral baseline (median over valid frames).
+    for key in _ANGLE_KEYS:
+        arr = np.asarray(out[key], dtype=float)
+        valid = np.isfinite(arr)
+        if not np.any(valid):
+            continue
+        baseline = float(np.nanmedian(arr[valid]))
+        arr[valid] = arr[valid] - baseline
+        out[key] = arr.tolist()
 
     return out
 
