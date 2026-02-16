@@ -201,6 +201,72 @@ class TestLoadC3D(unittest.TestCase):
         self.assertEqual(len(out["angle_frames"]), 2)
         self.assertTrue(debug_mock.called)
 
+    def test_external_angles_auto_aligns_on_second_hs_when_shorter(self):
+        labels = ["LHEE", "RHEE", "LTOE", "RTOE"]
+        points = np.zeros((4, len(labels), 10), dtype=float)
+
+        fake_ezc3d = types.SimpleNamespace(
+            c3d=lambda _path: {
+                "header": {"points": {"frame_rate": 100.0}},
+                "data": {"points": points},
+                "parameters": {"POINT": {"LABELS": {"value": labels}}},
+            }
+        )
+        angles = {
+            "Lhip": [10.0, 11.0, 12.0, 13.0],
+            "Rhip": [20.0, 21.0, 22.0, 23.0],
+            "Lknee": [30.0, 31.0, 32.0, 33.0],
+            "Rknee": [40.0, 41.0, 42.0, 43.0],
+            "Lankle": [50.0, 51.0, 52.0, 53.0],
+            "Rankle": [60.0, 61.0, 62.0, 63.0],
+        }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            c3d_path = Path(tmp) / "aligned.c3d"
+            c3d_path.write_bytes(b"")
+            with mock.patch.dict(sys.modules, {"ezc3d": fake_ezc3d}):
+                with mock.patch("gaitkit._io._extract_hs_frames_from_c3d", return_value=[2, 5]):
+                    out = _io.load_c3d(str(c3d_path), marker_set="pig", angles=angles, angles_align="auto")
+
+        self.assertEqual(out["angle_frames"][0]["left_hip_angle"], 10.0)
+        self.assertEqual(out["angle_frames"][4]["left_hip_angle"], 10.0)
+        self.assertEqual(out["angle_frames"][5]["left_hip_angle"], 10.0)
+        self.assertEqual(out["angle_frames"][8]["left_hip_angle"], 13.0)
+        self.assertEqual(out["angle_frames"][9]["left_hip_angle"], 13.0)
+
+    def test_external_angles_auto_resamples_when_no_hs(self):
+        labels = ["LHEE", "RHEE", "LTOE", "RTOE"]
+        points = np.zeros((4, len(labels), 6), dtype=float)
+
+        fake_ezc3d = types.SimpleNamespace(
+            c3d=lambda _path: {
+                "header": {"points": {"frame_rate": 100.0}},
+                "data": {"points": points},
+                "parameters": {"POINT": {"LABELS": {"value": labels}}},
+            }
+        )
+        angles = {
+            "Lhip": [0.0, 1.0, 2.0],
+            "Rhip": [0.0, 1.0, 2.0],
+            "Lknee": [0.0, 1.0, 2.0],
+            "Rknee": [0.0, 1.0, 2.0],
+            "Lankle": [0.0, 1.0, 2.0],
+            "Rankle": [0.0, 1.0, 2.0],
+        }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            c3d_path = Path(tmp) / "resample.c3d"
+            c3d_path.write_bytes(b"")
+            with mock.patch.dict(sys.modules, {"ezc3d": fake_ezc3d}):
+                with mock.patch("gaitkit._io._extract_hs_frames_from_c3d", return_value=[]):
+                    out = _io.load_c3d(str(c3d_path), marker_set="pig", angles=angles, angles_align="auto")
+
+        vals = [fr["left_hip_angle"] for fr in out["angle_frames"]]
+        self.assertEqual(len(vals), 6)
+        self.assertAlmostEqual(vals[0], 0.0)
+        self.assertAlmostEqual(vals[-1], 2.0)
+        self.assertGreater(vals[3], vals[2])
+
 
 if __name__ == "__main__":
     unittest.main()

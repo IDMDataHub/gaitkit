@@ -539,6 +539,73 @@ def verify_angles_against_external(
     }
 
 
+def _align_external_angle_series(
+    series: Sequence[float],
+    *,
+    n_frames: int,
+    start: int,
+    mode: str,
+) -> List[float]:
+    """Align one external angle series to the C3D timeline."""
+    import numpy as np
+
+    src = np.asarray(series, dtype=float).reshape(-1)
+    if src.size == 0:
+        return [0.0] * int(n_frames)
+
+    n = int(n_frames)
+    if n <= 0:
+        return []
+
+    if mode == "resample":
+        if src.size == n:
+            return src.astype(float).tolist()
+        if src.size == 1:
+            return [float(src[0])] * n
+        x_old = np.linspace(0.0, 1.0, num=int(src.size))
+        x_new = np.linspace(0.0, 1.0, num=n)
+        return np.interp(x_new, x_old, src).astype(float).tolist()
+
+    # Placement mode: insert source at `start`, pad edges with first/last value.
+    out = np.full(n, float(src[-1]), dtype=float)
+    start_i = max(0, int(start))
+    if start_i > 0:
+        out[:start_i] = float(src[0])
+    end_i = min(n, start_i + int(src.size))
+    if end_i > start_i:
+        out[start_i:end_i] = src[: end_i - start_i]
+    return out.tolist()
+
+
+def _resolve_external_angle_alignment_mode(
+    *,
+    angles_align: str,
+    hs_frames: Sequence[int],
+    has_length_mismatch: bool,
+) -> Tuple[str, int]:
+    align_key = str(angles_align or "auto").strip().lower()
+    if align_key not in {"auto", "none", "first_hs", "second_hs", "resample"}:
+        raise ValueError("angles_align must be 'auto', 'none', 'first_hs', 'second_hs', or 'resample'")
+
+    if align_key == "none":
+        return "place", 0
+    if align_key == "first_hs":
+        return "place", int(hs_frames[0]) if hs_frames else 0
+    if align_key == "second_hs":
+        if len(hs_frames) >= 2:
+            return "place", int(hs_frames[1])
+        return "place", int(hs_frames[0]) if hs_frames else 0
+    if align_key == "resample":
+        return "resample", 0
+
+    # auto
+    if has_length_mismatch and hs_frames:
+        if len(hs_frames) >= 2:
+            return "place", int(hs_frames[1])
+        return "place", int(hs_frames[0])
+    return "resample", 0
+
+
 # ── C3D loading ──────────────────────────────────────────────────────
 
 def load_c3d(
@@ -546,6 +613,7 @@ def load_c3d(
     marker_set: str = "auto",
     marker_map: Optional[Mapping[str, MarkerSpec]] = None,
     angles: Optional[AnglesLike] = None,
+    angles_align: str = "auto",
 ) -> dict:
     """Load a C3D file and extract angle frames.
 
@@ -561,6 +629,10 @@ def load_c3d(
     angles : str, Path, or dict, optional
         Optional external angle source (MAT/CSV/JSON or in-memory mapping).
         When provided, these values override angle fields extracted from C3D.
+    angles_align : str
+        External angle alignment mode when lengths differ from C3D:
+        ``"auto"`` (default), ``"second_hs"``, ``"first_hs"``, ``"none"``,
+        or ``"resample"``.
 
     Returns
     -------
@@ -671,7 +743,23 @@ def load_c3d(
 
     # Optional external angles override
     if angles is not None:
-        ext = load_angles_file(angles, n_frames=n_frames)
+        ext_raw = load_angles_file(angles, n_frames=None)
+        hs_frames = _extract_hs_frames_from_c3d(c3d_path, fps_hint=fps)
+        has_mismatch = any(len(v) != n_frames for v in ext_raw.values())
+        align_mode, align_start = _resolve_external_angle_alignment_mode(
+            angles_align=angles_align,
+            hs_frames=hs_frames,
+            has_length_mismatch=has_mismatch,
+        )
+        ext = {
+            key: _align_external_angle_series(
+                series,
+                n_frames=n_frames,
+                start=align_start,
+                mode=align_mode,
+            )
+            for key, series in ext_raw.items()
+        }
         if not ext:
             raise ValueError(
                 f"No usable angle columns were found in '{angles}'. "
