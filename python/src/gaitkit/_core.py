@@ -418,7 +418,10 @@ def _normalize_input(data, fps):
                 raise ValueError("No angle frames were found in the C3D file")
             if trial["fps"] <= 0:
                 raise ValueError("Invalid sampling frequency found in the C3D file")
-            return trial["angle_frames"], trial["fps"]
+            af = trial["angle_frames"]
+            if af and isinstance(af[0], dict):
+                af = _dicts_to_angle_frames(af)
+            return af, trial["fps"]
         raise ValueError(f"Unsupported file format: {p.suffix}")
 
     # Case 2: ExtractionResult (has .angle_frames and .fps)

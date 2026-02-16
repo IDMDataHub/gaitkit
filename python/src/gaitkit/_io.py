@@ -5,9 +5,118 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
+from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
 
 _DATA_DIR = Path(__file__).parent / "data"
 logger = logging.getLogger(__name__)
+
+Point3D = Tuple[float, float, float]
+MarkerSpec = Union[str, Sequence[str]]
+
+
+_MARKER_MAPS: Dict[str, Dict[str, List[MarkerSpec]]] = {
+    # Plug-in Gait (+ common aliases)
+    "pig": {
+        "left_heel": ["LHEE", "LHEEL", "LHEE1", "LCAL", "LEFTHEEL"],
+        "right_heel": ["RHEE", "RHEEL", "RHEE1", "RCAL", "RIGHTHEEL"],
+        "left_toe": ["LTOE", "LTOE1", "LFMH1", "LTT2", "LEFTTOE"],
+        "right_toe": ["RTOE", "RTOE1", "RFMH1", "RTT2", "RIGHTTOE"],
+        "left_ankle": ["LANK", "LEFTANKLE", ("LMM", "LLM"), "LMM", "LLM"],
+        "right_ankle": ["RANK", "RIGHTANKLE", ("RMM", "RLM"), "RMM", "RLM"],
+        "left_knee": ["LKNE", "LEFTKNEE", ("LLFE", "LMFE"), "LLFE", "LMFE"],
+        "right_knee": ["RKNE", "RIGHTKNEE", ("RLFE", "RMFE"), "RLFE", "RMFE"],
+        "left_hip": ["LASI", "LASIS", "LEFTHIP"],
+        "right_hip": ["RASI", "RASIS", "RIGHTHIP"],
+        "sacrum": ["SACR", ("LPSIS", "RPSIS"), "LPSIS", "RPSIS"],
+    },
+    # ISB-style labels
+    "isb": {
+        "left_heel": ["LEFTHEEL"],
+        "right_heel": ["RIGHTHEEL"],
+        "left_toe": ["LEFTTOE"],
+        "right_toe": ["RIGHTTOE"],
+        "left_ankle": ["LEFTANKLE"],
+        "right_ankle": ["RIGHTANKLE"],
+        "left_knee": ["LEFTKNEE"],
+        "right_knee": ["RIGHTKNEE"],
+        "left_hip": ["LEFTHIP"],
+        "right_hip": ["RIGHTHIP"],
+    },
+    # Institut de Myologie / trial_07 naming convention
+    "imy": {
+        "left_heel": ["LCAL"],
+        "right_heel": ["RCAL"],
+        "left_toe": ["LFMH1", "LTT2", "LFMH5"],
+        "right_toe": ["RFMH1", "RTT2", "RFMH5"],
+        "left_ankle": [("LMM", "LLM"), "LMM", "LLM"],
+        "right_ankle": [("RMM", "RLM"), "RMM", "RLM"],
+        "left_knee": [("LLFE", "LMFE"), "LLFE", "LMFE"],
+        "right_knee": [("RLFE", "RMFE"), "RLFE", "RMFE"],
+        "left_hip": ["LASIS"],
+        "right_hip": ["RASIS"],
+        "sacrum": [("LPSIS", "RPSIS"), "LPSIS", "RPSIS"],
+    },
+}
+
+
+def _get_point(idx: Mapping[str, int], points, frame_index: int, label: str) -> Optional[Point3D]:
+    li = idx.get(label.upper())
+    if li is None:
+        return None
+    return (
+        float(points[0, li, frame_index]),
+        float(points[1, li, frame_index]),
+        float(points[2, li, frame_index]),
+    )
+
+
+def _mean_points(a: Optional[Point3D], b: Optional[Point3D]) -> Optional[Point3D]:
+    if a is None and b is None:
+        return None
+    if a is None:
+        return b
+    if b is None:
+        return a
+    return ((a[0] + b[0]) / 2.0, (a[1] + b[1]) / 2.0, (a[2] + b[2]) / 2.0)
+
+
+def _point_from_spec(idx: Mapping[str, int], points, frame_index: int, spec: MarkerSpec) -> Optional[Point3D]:
+    if isinstance(spec, str):
+        return _get_point(idx, points, frame_index, spec)
+    spec_list = list(spec)
+    if not spec_list:
+        return None
+    if len(spec_list) == 1:
+        return _get_point(idx, points, frame_index, spec_list[0])
+    # For pairs (e.g. malleoli/condyles), use center when both available.
+    p0 = _get_point(idx, points, frame_index, spec_list[0])
+    p1 = _get_point(idx, points, frame_index, spec_list[1])
+    return _mean_points(p0, p1)
+
+
+def _resolve_marker_point(
+    idx: Mapping[str, int], points, frame_index: int, specs: Sequence[MarkerSpec]
+) -> Optional[Point3D]:
+    for spec in specs:
+        p = _point_from_spec(idx, points, frame_index, spec)
+        if p is not None:
+            return p
+    return None
+
+
+def _normalize_custom_marker_map(marker_map: Mapping[str, MarkerSpec]) -> Dict[str, List[MarkerSpec]]:
+    out: Dict[str, List[MarkerSpec]] = {}
+    for canonical, spec in marker_map.items():
+        if not isinstance(canonical, str) or not canonical.strip():
+            raise ValueError("marker_map keys must be non-empty strings")
+        if isinstance(spec, str):
+            out[canonical] = [spec]
+        else:
+            seq = list(spec)
+            if not seq:
+                raise ValueError(f"marker_map entry for '{canonical}' is empty")
+            out[canonical] = [tuple(seq) if len(seq) > 1 else seq[0]]
+    return out
 
 # ── Bundled examples ─────────────────────────────────────────────────
 
@@ -77,7 +186,11 @@ def list_examples() -> list:
 
 # ── C3D loading ──────────────────────────────────────────────────────
 
-def load_c3d(path: str, marker_set: str = "auto") -> dict:
+def load_c3d(
+    path: str,
+    marker_set: str = "auto",
+    marker_map: Optional[Mapping[str, MarkerSpec]] = None,
+) -> dict:
     """Load a C3D file and extract angle frames.
 
     Parameters
@@ -85,7 +198,10 @@ def load_c3d(path: str, marker_set: str = "auto") -> dict:
     path : str or Path
         Path to a .c3d file.
     marker_set : str
-        Marker naming convention: "pig" (Plug-in Gait), "isb", or "auto".
+        Marker naming convention: "pig" (Plug-in Gait), "isb", "imy", or "auto".
+    marker_map : dict, optional
+        Custom mapping ``canonical_name -> label_or_pair`` used instead of presets.
+        Example: ``{"left_heel": "LCAL", "left_ankle": ("LMM", "LLM")}``.
 
     Returns
     -------
@@ -106,7 +222,7 @@ def load_c3d(path: str, marker_set: str = "auto") -> dict:
         raise FileNotFoundError(f"C3D file not found: {c3d_path}")
 
     if not isinstance(marker_set, str) or not marker_set.strip():
-        raise ValueError("marker_set must be 'auto', 'pig', or 'isb'")
+        raise ValueError("marker_set must be 'auto', 'pig', 'isb', or 'imy'")
 
     try:
         import ezc3d
@@ -129,52 +245,32 @@ def load_c3d(path: str, marker_set: str = "auto") -> dict:
     # Detect marker set
     marker_set = marker_set.lower().strip()
     if marker_set == "auto":
-        if "LHEE" in idx or "RHEE" in idx:
+        if any(k in idx for k in ("LCAL", "RCAL", "LFMH1", "RFMH1", "LMM", "RMM", "LLM", "RLM")):
+            marker_set = "imy"
+        elif "LHEE" in idx or "RHEE" in idx:
             marker_set = "pig"
         elif "LEFTHEEL" in idx:
             marker_set = "isb"
         else:
             marker_set = "pig"
 
-    # Marker name mapping
-    if marker_set == "pig":
-        _map = {
-            "left_heel": "LHEE", "right_heel": "RHEE",
-            "left_toe": "LTOE", "right_toe": "RTOE",
-            "left_ankle": "LANK", "right_ankle": "RANK",
-            "left_knee": "LKNE", "right_knee": "RKNE",
-            "left_hip": "LASI", "right_hip": "RASI",
-            "left_shoulder": "LSHO", "right_shoulder": "RSHO",
-            "sacrum": "SACR",
-        }
-    elif marker_set == "isb":
-        _map = {
-            "left_heel": "LEFTHEEL",
-            "right_heel": "RIGHTHEEL",
-            "left_toe": "LEFTTOE",
-            "right_toe": "RIGHTTOE",
-            "left_ankle": "LEFTANKLE",
-            "right_ankle": "RIGHTANKLE",
-            "left_knee": "LEFTKNEE",
-            "right_knee": "RIGHTKNEE",
-            "left_hip": "LEFTHIP",
-            "right_hip": "RIGHTHIP",
-        }
+    if marker_map is not None:
+        resolved_map = _normalize_custom_marker_map(marker_map)
     else:
-        raise ValueError(f"Unknown marker_set {marker_set!r}. Expected 'auto', 'pig', or 'isb'.")
+        if marker_set not in _MARKER_MAPS:
+            raise ValueError(
+                f"Unknown marker_set {marker_set!r}. Expected 'auto', 'pig', 'isb', or 'imy'."
+            )
+        resolved_map = _MARKER_MAPS[marker_set]
 
     # Extract landmarks per frame
     angle_frames = []
     for fi in range(n_frames):
         lp = {}
-        for name, label in _map.items():
-            li = idx.get(label.upper())
-            if li is not None:
-                lp[name] = (
-                    float(points[0, li, fi]),
-                    float(points[1, li, fi]),
-                    float(points[2, li, fi]),
-                )
+        for name, specs in resolved_map.items():
+            p = _resolve_marker_point(idx, points, fi, specs)
+            if p is not None:
+                lp[name] = p
         angle_frames.append({
             "frame_index": fi,
             "landmark_positions": lp if lp else None,
@@ -185,6 +281,16 @@ def load_c3d(path: str, marker_set: str = "auto") -> dict:
             "left_ankle_angle": 0.0,
             "right_ankle_angle": 0.0,
         })
+
+    if not any(frame["landmark_positions"] for frame in angle_frames):
+        label_preview = ", ".join(labels[:20])
+        raise ValueError(
+            "No supported gait markers were found in the C3D file. "
+            "Expected Plug-in Gait labels (e.g., LHEE/RHEE/LTOE/RTOE), "
+            "ISB-style labels (e.g., LEFTHEEL/RIGHTHEEL), or IMY labels "
+            "(e.g., LCAL/RCAL/LFMH1/RFMH1). "
+            f"Detected labels (first 20): {label_preview}"
+        )
 
     # Try to extract angles from MODEL outputs
     try:
