@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 import logging
+import os
+import subprocess
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -19,6 +22,11 @@ _ALL_METHODS = [
     "bike", "zeni", "oconnor", "hreljac", "mickelborough",
     "ghoussayni", "vancanneyt", "dgei", "intellevent", "deepevent",
 ]
+
+_OPTIONAL_METHOD_DEPENDENCIES = {
+    "intellevent": ["onnxruntime"],
+    "deepevent": ["tensorflow", "h5py"],
+}
 
 
 def list_methods() -> List[str]:
@@ -200,7 +208,41 @@ def _resolve_method(name: str) -> str:
     return _METHOD_ALIASES.get(low, low)
 
 
-def _make_detector(method: str, fps: float):
+def _auto_install_enabled(auto_install_deps: Optional[bool]) -> bool:
+    if auto_install_deps is not None:
+        return bool(auto_install_deps)
+    raw = os.getenv("GAITKIT_AUTO_INSTALL_DEPS", "1").strip().lower()
+    return raw not in {"0", "false", "no", "off"}
+
+
+def _install_optional_dependencies(method_key: str) -> None:
+    packages = _OPTIONAL_METHOD_DEPENDENCIES.get(method_key, [])
+    if not packages:
+        return
+    cmd = [sys.executable, "-m", "pip", "install", *packages]
+    logger.warning(
+        "Missing optional dependencies for '%s'. Attempting automatic install: %s",
+        method_key,
+        " ".join(packages),
+    )
+    proc = subprocess.run(cmd, capture_output=True, text=True)
+    if proc.returncode != 0:
+        stderr = (proc.stderr or "").strip()
+        raise RuntimeError(
+            f"Automatic dependency installation failed for method '{method_key}'. "
+            f"Command: {' '.join(cmd)}\n{stderr}"
+        )
+
+
+def _optional_install_hint(method_key: str) -> str:
+    if method_key == "intellevent":
+        return "Install dependencies with: pip install gaitkit[onnx]"
+    if method_key == "deepevent":
+        return "Install dependencies with: pip install gaitkit[deep]"
+    return ""
+
+
+def _make_detector(method: str, fps: float, *, auto_install_deps: bool = True):
     """Instantiate the requested detector, preferring native C backends."""
     key = _resolve_method(method)
 
@@ -247,10 +289,28 @@ def _make_detector(method: str, fps: float):
     if key in _python_map:
         mod_name, cls_name = _python_map[key]
         import importlib
-        mod = importlib.import_module(mod_name)
-        cls = getattr(mod, cls_name)
-        det = cls(fps=fps)
-        return det
+        try:
+            mod = importlib.import_module(mod_name)
+            cls = getattr(mod, cls_name)
+            return cls(fps=fps)
+        except ModuleNotFoundError as exc:
+            if key in _OPTIONAL_METHOD_DEPENDENCIES and auto_install_deps:
+                _install_optional_dependencies(key)
+                importlib.invalidate_caches()
+                mod = importlib.import_module(mod_name)
+                cls = getattr(mod, cls_name)
+                return cls(fps=fps)
+            hint = _optional_install_hint(key)
+            if hint:
+                raise ImportError(
+                    f"Missing optional dependency for method '{key}': {exc}. {hint}"
+                ) from exc
+            raise
+        except RuntimeError as exc:
+            hint = _optional_install_hint(key)
+            if hint:
+                raise RuntimeError(f"{exc}\n{hint}") from exc
+            raise
 
     raise ValueError(
         f"Unknown method {method!r}. Available: {list_methods()}"
@@ -278,6 +338,7 @@ def detect(
     method: str = "bike",
     fps: float = None,
     units: Optional[Dict[str, str]] = None,
+    auto_install_deps: Optional[bool] = None,
 ) -> GaitResult:
     """Detect gait events (heel-strikes and toe-offs).
 
@@ -295,6 +356,11 @@ def detect(
         or an ExtractionResult (which carry their own fps).
     units : dict, optional
         Unit hints, e.g. {"position": "mm", "angles": "deg"}.
+    auto_install_deps : bool, optional
+        If True, automatically install missing optional Python dependencies
+        when using deep-learning methods (IntellEvent, DeepEvent). If None,
+        behavior is controlled by environment variable
+        ``GAITKIT_AUTO_INSTALL_DEPS`` (default: enabled).
 
     Returns
     -------
@@ -309,7 +375,11 @@ def detect(
     >>> result.summary()
     """
     angle_frames, resolved_fps = _normalize_input(data, fps)
-    det = _make_detector(method, resolved_fps)
+    det = _make_detector(
+        method,
+        resolved_fps,
+        auto_install_deps=_auto_install_enabled(auto_install_deps),
+    )
     hs, to, _cycles = det.detect_gait_events(angle_frames)
 
     # Split by side
