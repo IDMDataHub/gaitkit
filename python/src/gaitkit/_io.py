@@ -224,9 +224,24 @@ def _extract_1d_angle(values, n_frames: int) -> Optional[List[float]]:
         series = arr[:, 0].astype(float)
     else:
         return None
-    if series.shape[0] < n_frames:
+    n_src = int(series.shape[0])
+    if n_src <= 0:
         return None
-    return series[:n_frames].tolist()
+    if n_src == n_frames:
+        return series.tolist()
+    if n_src == 1:
+        return [float(series[0])] * n_frames
+    # Robust fallback for mismatched lengths (cropped/segmented exports):
+    # resample on normalized time [0, 1] to match C3D frame count.
+    x_old = np.linspace(0.0, 1.0, num=n_src)
+    x_new = np.linspace(0.0, 1.0, num=n_frames)
+    out = np.interp(x_new, x_old, series)
+    logger.debug(
+        "Resampled external angle series from %d to %d frames.",
+        n_src,
+        n_frames,
+    )
+    return out.tolist()
 
 
 def _load_angles_from_mapping(angles: Mapping[str, Sequence[float]], n_frames: int) -> Dict[str, List[float]]:
