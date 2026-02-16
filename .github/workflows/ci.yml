@@ -89,16 +89,14 @@ jobs:
         with:
           r-version: devel
 
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpng-dev
+
       - name: Install R dependencies
-        uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          extra-packages: |
-            any::jsonlite
-            any::testthat
-            any::knitr
-            any::rmarkdown
-            any::reticulate
-          needs: check
+        run: |
+          Rscript -e "install.packages(c('jsonlite','testthat','knitr','rmarkdown','reticulate'), repos='https://cloud.r-project.org')"
 
       - name: Install Python package for reticulate
         run: python -m pip install -e ./python
