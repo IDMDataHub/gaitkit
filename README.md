@@ -15,7 +15,7 @@ C-accelerated backends, accessible from Python, R, and MATLAB.
 
 ## Installation
 
-Current status: PyPI release available (`gaitkit==1.2.0`), release `1.2.1` in progress, CRAN submission in progress.
+Current status: PyPI release available (`gaitkit==1.2.1`), release `1.2.2` in progress, CRAN submission in progress.
 
 **Install from local source (recommended for now)**
 
@@ -158,7 +158,7 @@ If you use gaitkit in your research, please cite the software release:
 @software{fer2026gaitkit,
   author  = {Fer, Fr{\'e}d{\'e}ric},
   title   = {gaitkit},
-  version = {1.2.1},
+  version = {1.2.2},
   year    = {2026},
   doi     = {10.5281/zenodo.18653110},
   url     = {https://doi.org/10.5281/zenodo.18653110}
