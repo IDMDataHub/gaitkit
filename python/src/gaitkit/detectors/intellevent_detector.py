@@ -41,6 +41,11 @@ import numpy as np
 from typing import List, Tuple, Dict, Optional
 from dataclasses import dataclass
 from pathlib import Path
+import logging
+import os
+import tempfile
+import urllib.error
+import urllib.request
 from scipy.signal import find_peaks
 import pandas as pd
 
@@ -49,6 +54,17 @@ try:
     ONNX_AVAILABLE = True
 except ImportError:
     ONNX_AVAILABLE = False
+
+logger = logging.getLogger(__name__)
+
+_INTELLEVENT_MODEL_URLS = {
+    "ic_intellevent.onnx": [
+        "https://raw.githubusercontent.com/IDMDataHub/gaitkit/master/python/src/gaitkit/data/ic_intellevent.onnx",
+    ],
+    "fo_intellevent.onnx": [
+        "https://raw.githubusercontent.com/IDMDataHub/gaitkit/master/python/src/gaitkit/data/fo_intellevent.onnx",
+    ],
+}
 
 
 def _looks_like_lfs_pointer(path: Path) -> bool:
@@ -59,6 +75,42 @@ def _looks_like_lfs_pointer(path: Path) -> bool:
     except OSError:
         return False
     return head.startswith(b"version https://git-lfs.github.com/spec/v1")
+
+
+def _download_intellevent_model(target_path: Path, model_name: str) -> Optional[Path]:
+    """Download one IntellEvent ONNX model to target_path."""
+    urls = _INTELLEVENT_MODEL_URLS.get(model_name, [])
+    if not urls:
+        return None
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+
+    for url in urls:
+        logger.warning(
+            "IntellEvent model '%s' missing/invalid. Downloading from: %s",
+            model_name,
+            url,
+        )
+        tmp_path = None
+        try:
+            with urllib.request.urlopen(url, timeout=60) as response:
+                fd, tmp_name = tempfile.mkstemp(prefix=f"{model_name}_", suffix=".onnx")
+                tmp_path = Path(tmp_name)
+                with os.fdopen(fd, "wb") as out:
+                    while True:
+                        chunk = response.read(1024 * 1024)
+                        if not chunk:
+                            break
+                        out.write(chunk)
+            if _looks_like_lfs_pointer(tmp_path):
+                raise RuntimeError("downloaded file is a Git LFS pointer")
+            tmp_path.replace(target_path)
+            logger.warning("IntellEvent model downloaded and cached at: %s", target_path)
+            return target_path
+        except (OSError, urllib.error.URLError, TimeoutError, RuntimeError) as exc:
+            logger.warning("Could not download IntellEvent model from %s: %s", url, exc)
+            if tmp_path is not None and tmp_path.exists():
+                tmp_path.unlink(missing_ok=True)
+    return None
 
 
 @dataclass
@@ -121,15 +173,22 @@ class IntellEventDetector:
         fo_path = models_dir / 'fo_intellevent.onnx'
 
         if not ic_path.exists() or not fo_path.exists():
-            raise FileNotFoundError(
-                f"IntellEvent ONNX models not found in {models_dir}. "
-                "Install with: pip install gaitkit[onnx]")
+            _download_intellevent_model(ic_path, "ic_intellevent.onnx")
+            _download_intellevent_model(fo_path, "fo_intellevent.onnx")
+            if not ic_path.exists() or not fo_path.exists():
+                raise FileNotFoundError(
+                    f"IntellEvent ONNX models not found in {models_dir}. "
+                    "Install with: pip install gaitkit[onnx]"
+                )
         self.ic_session = self._load_onnx_session(ic_path, "IC")
         self.fo_session = self._load_onnx_session(fo_path, "FO")
 
     def _load_onnx_session(self, model_path: Path, model_name: str):
         """Load one ONNX session with actionable diagnostics on failure."""
         if _looks_like_lfs_pointer(model_path):
+            model_file = model_path.name
+            if _download_intellevent_model(model_path, model_file) is not None:
+                return ort.InferenceSession(str(model_path))
             raise RuntimeError(
                 f"IntellEvent {model_name} model at '{model_path}' is a Git LFS pointer, "
                 "not the real ONNX binary. Reinstall gaitkit from PyPI with:\n"
@@ -138,6 +197,16 @@ class IntellEventDetector:
         try:
             return ort.InferenceSession(str(model_path))
         except Exception as exc:
+            model_file = model_path.name
+            if _download_intellevent_model(model_path, model_file) is not None:
+                try:
+                    return ort.InferenceSession(str(model_path))
+                except Exception as retry_exc:
+                    logger.debug(
+                        "Retry loading IntellEvent model failed after re-download (%s): %s",
+                        model_path,
+                        retry_exc,
+                    )
             size = model_path.stat().st_size if model_path.exists() else 0
             raise RuntimeError(
                 f"Failed to load IntellEvent {model_name} model from '{model_path}' "

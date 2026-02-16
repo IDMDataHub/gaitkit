@@ -6,11 +6,16 @@ import sys
 import unittest
 from pathlib import Path
 import tempfile
+from unittest import mock
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "python" / "src"))
 
-from gaitkit.detectors.intellevent_detector import IntellEventDetector, _looks_like_lfs_pointer
+from gaitkit.detectors.intellevent_detector import (
+    IntellEventDetector,
+    _looks_like_lfs_pointer,
+    _download_intellevent_model,
+)
 
 
 class TestIntellEventDetector(unittest.TestCase):
@@ -36,6 +41,44 @@ class TestIntellEventDetector(unittest.TestCase):
             p = Path(tmp) / "model.onnx"
             p.write_bytes(b"\x08\x08\x12\x07tf2onnx")
             self.assertFalse(_looks_like_lfs_pointer(p))
+
+    def test_download_intellevent_model_success_with_mocked_response(self):
+        payload = b"\x08\x08\x12\x07tf2onnx" + b"\x00" * 64
+
+        class _Resp:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+            def __init__(self, data: bytes):
+                self._data = data
+                self._idx = 0
+
+            def read(self, n: int = -1):
+                if self._idx >= len(self._data):
+                    return b""
+                if n < 0:
+                    n = len(self._data) - self._idx
+                out = self._data[self._idx:self._idx + n]
+                self._idx += len(out)
+                return out
+
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "ic_intellevent.onnx"
+            with mock.patch(
+                "gaitkit.detectors.intellevent_detector._INTELLEVENT_MODEL_URLS",
+                {"ic_intellevent.onnx": ["https://example.test/ic.onnx"]},
+            ):
+                with mock.patch(
+                    "gaitkit.detectors.intellevent_detector.urllib.request.urlopen",
+                    return_value=_Resp(payload),
+                ):
+                    out = _download_intellevent_model(target, "ic_intellevent.onnx")
+            self.assertEqual(out, target)
+            self.assertTrue(target.exists())
+            self.assertFalse(_looks_like_lfs_pointer(target))
 
 
 if __name__ == "__main__":
