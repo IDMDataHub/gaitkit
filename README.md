@@ -19,7 +19,7 @@ Current status: PyPI release available (`gaitkit==0.1.0`), CRAN submission in pr
 
 **Install from local source (recommended for now)**
 
-**Python** (requires >= 3.9):
+**Python** (requires >= 3.10):
 
 ```bash
 python -m pip install -e ./python

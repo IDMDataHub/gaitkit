@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Universal gait event detection toolkit — 10 methods including BIKE, with C-accelerated backends"
 readme = "README.md"
 license = "MIT"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [
     {name = "Frédéric Fer", email = "f.fer@institut-myologie.org"}
 ]
@@ -18,7 +18,6 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -29,20 +28,20 @@ dependencies = [
     "numpy>=1.23",
     "scipy>=1.10",
     "pandas>=1.5",
+    "ezc3d>=1.5",
 ]
 
 [project.optional-dependencies]
 onnx = ["onnxruntime>=1.14"]
 deep = ["tensorflow>=2.12", "h5py"]
 viz = ["matplotlib>=3.7"]
-c3d = ["ezc3d>=1.5"]
+c3d = []
 test = ["pytest>=7.0", "coverage>=7.0"]
 all = [
     "onnxruntime>=1.14",
     "tensorflow>=2.12",
     "h5py",
     "matplotlib>=3.7",
-    "ezc3d>=1.5",
 ]
 
 [project.scripts]

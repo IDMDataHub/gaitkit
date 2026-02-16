@@ -31,7 +31,7 @@ class TestPackagingContract(unittest.TestCase):
 
     def test_python_version_classifiers_are_declared(self):
         pyproject = (PROJECT_ROOT / "python" / "pyproject.toml").read_text(encoding="utf-8")
-        self.assertIn("Programming Language :: Python :: 3.9", pyproject)
+        self.assertIn("requires-python = \">=3.10\"", pyproject)
         self.assertIn("Programming Language :: Python :: 3.10", pyproject)
         self.assertIn("Programming Language :: Python :: 3.11", pyproject)
         self.assertIn("Programming Language :: Python :: 3.12", pyproject)
