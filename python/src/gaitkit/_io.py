@@ -46,14 +46,14 @@ _MARKER_MAPS: Dict[str, Dict[str, List[MarkerSpec]]] = {
     "imy": {
         "left_heel": ["LCAL"],
         "right_heel": ["RCAL"],
-        "left_toe": ["LFMH1", "LTT2", "LFMH5"],
-        "right_toe": ["RFMH1", "RTT2", "RFMH5"],
+        "left_toe": ["LTT2", "LFMH1", "LFMH5"],
+        "right_toe": ["RTT2", "RFMH1", "RFMH5"],
         "left_ankle": [("LMM", "LLM"), "LMM", "LLM"],
         "right_ankle": [("RMM", "RLM"), "RMM", "RLM"],
         "left_knee": [("LLFE", "LMFE"), "LLFE", "LMFE"],
         "right_knee": [("RLFE", "RMFE"), "RLFE", "RMFE"],
-        "left_hip": ["LASIS"],
-        "right_hip": ["RASIS"],
+        "left_hip": ["LHJC", "LASIS"],
+        "right_hip": ["RHJC", "RASIS"],
         "sacrum": [("LPSIS", "RPSIS"), "LPSIS", "RPSIS"],
     },
 }
