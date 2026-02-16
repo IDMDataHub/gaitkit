@@ -90,7 +90,10 @@ jobs:
           r-version: devel
 
       - name: Install R dependencies
-        run: Rscript -e "install.packages(c('reticulate','jsonlite','testthat','knitr','rmarkdown'), repos='https://cloud.r-project.org')"
+        run: |
+          Rscript -e "install.packages(c('jsonlite','testthat','knitr','rmarkdown','remotes'), repos='https://cloud.r-project.org')"
+          Rscript -e "if (!requireNamespace('reticulate', quietly = TRUE)) try(remotes::install_cran('reticulate', repos = 'https://cloud.r-project.org'), silent = TRUE)"
+          Rscript -e "if (!requireNamespace('reticulate', quietly = TRUE)) remotes::install_github('rstudio/reticulate')"
 
       - name: Install Python package for reticulate
         run: python -m pip install -e ./python
