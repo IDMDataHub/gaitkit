@@ -769,6 +769,24 @@ def load_c3d(
         for fi in range(n_frames):
             for key, series in ext.items():
                 angle_frames[fi][key] = float(series[fi])
+    else:
+        # If no model angles are available in C3D payload, compute proxy
+        # sagittal angles directly from marker geometry.
+        import numpy as np
+
+        proxy = compute_marker_proxy_angles(angle_frames)
+        for key, series in proxy.items():
+            if len(series) != n_frames:
+                continue
+            has_existing_signal = any(abs(float(fr.get(key, 0.0))) > 1e-12 for fr in angle_frames)
+            if has_existing_signal:
+                continue
+            arr = np.asarray(series, dtype=float)
+            if not np.isfinite(arr).any():
+                continue
+            for fi in range(n_frames):
+                if np.isfinite(arr[fi]):
+                    angle_frames[fi][key] = float(arr[fi])
 
     return {
         "angle_frames": angle_frames,

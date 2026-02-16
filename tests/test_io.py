@@ -138,6 +138,58 @@ class TestLoadC3D(unittest.TestCase):
                     _io.load_c3d(str(c3d_path), marker_set="auto")
         self.assertIn("Detected labels", str(ctx.exception))
 
+    def test_load_c3d_computes_proxy_angles_when_model_angles_absent(self):
+        labels = [
+            "LASI", "RASI", "SACR",
+            "LKNE", "RKNE",
+            "LANK", "RANK",
+            "LTOE", "RTOE",
+            "LHEE", "RHEE",
+        ]
+        n_frames = 6
+        points = np.zeros((4, len(labels), n_frames), dtype=float)
+
+        def set_series(label: str, x0: float, x_step: float, z: float):
+            i = labels.index(label)
+            for f in range(n_frames):
+                points[0, i, f] = x0 + x_step * f
+                points[1, i, f] = 0.0
+                points[2, i, f] = z
+
+        # Simple sagittal motion with varying knee/toe trajectories.
+        set_series("LASI", 0.10, 0.01, 1.00)
+        set_series("RASI", 0.12, 0.01, 1.00)
+        set_series("SACR", 0.11, 0.01, 0.95)
+        set_series("LKNE", 0.15, 0.015, 0.60)
+        set_series("RKNE", 0.13, 0.015, 0.60)
+        set_series("LANK", 0.18, 0.020, 0.20)
+        set_series("RANK", 0.16, 0.020, 0.20)
+        set_series("LTOE", 0.24, 0.025, 0.02)
+        set_series("RTOE", 0.22, 0.025, 0.02)
+        set_series("LHEE", 0.12, 0.020, 0.02)
+        set_series("RHEE", 0.10, 0.020, 0.02)
+
+        fake_ezc3d = types.SimpleNamespace(
+            c3d=lambda _path: {
+                "header": {"points": {"frame_rate": 100.0}},
+                "data": {"points": points},
+                "parameters": {"POINT": {"LABELS": {"value": labels}}},
+            }
+        )
+
+        with tempfile.TemporaryDirectory() as tmp:
+            c3d_path = Path(tmp) / "no_model_angles.c3d"
+            c3d_path.write_bytes(b"")
+            with mock.patch.dict(sys.modules, {"ezc3d": fake_ezc3d}):
+                out = _io.load_c3d(str(c3d_path), marker_set="pig")
+
+        lk = np.array([fr["left_knee_angle"] for fr in out["angle_frames"]], dtype=float)
+        la = np.array([fr["left_ankle_angle"] for fr in out["angle_frames"]], dtype=float)
+        self.assertTrue(np.isfinite(lk).all())
+        self.assertTrue(np.isfinite(la).all())
+        self.assertFalse(np.allclose(lk, 0.0))
+        self.assertFalse(np.allclose(la, 0.0))
+
     def test_load_angles_file_from_mapping(self):
         angles = {
             "Lhip": np.arange(10, dtype=float),
