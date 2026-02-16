@@ -4,7 +4,7 @@ Python package for gait event detection from motion-capture data.
 
 ## Install
 
-Current status: pre-release (not yet published on PyPI).
+Current status: PyPI release available (`gaitkit==0.1.0`).
 
 Install from local source:
 
@@ -22,7 +22,7 @@ pip install gaitkit
 Optional extras:
 
 ```bash
-pip install "gaitkit[all]"   # onnx + deep + viz + c3d helpers
+pip install "gaitkit[all]"   # onnx + deep + viz
 ```
 
 ## Quick Start
@@ -33,6 +33,9 @@ import gaitkit
 trial = gaitkit.load_example("healthy")
 result = gaitkit.detect(trial, method="bike")
 print(result.summary())
+
+# Optional: combine C3D markers with an external angle file
+result2 = gaitkit.detect("trial_07.c3d", method="bike", angles="res_angles_t.mat")
 ```
 
 DeepEvent weights are downloaded automatically on first DeepEvent use and

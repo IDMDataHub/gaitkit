@@ -339,6 +339,7 @@ def detect(
     fps: float = None,
     units: Optional[Dict[str, str]] = None,
     auto_install_deps: Optional[bool] = None,
+    angles=None,
 ) -> GaitResult:
     """Detect gait events (heel-strikes and toe-offs).
 
@@ -361,6 +362,9 @@ def detect(
         when using deep-learning methods (IntellEvent, DeepEvent). If None,
         behavior is controlled by environment variable
         ``GAITKIT_AUTO_INSTALL_DEPS`` (default: enabled).
+    angles : str, Path, or dict, optional
+        Optional external angle source used when ``data`` is a C3D file path.
+        Accepted formats: MAT/CSV/JSON files or in-memory mapping.
 
     Returns
     -------
@@ -374,7 +378,7 @@ def detect(
     >>> result = gaitkit.detect(trial, method="bike")
     >>> result.summary()
     """
-    angle_frames, resolved_fps = _normalize_input(data, fps)
+    angle_frames, resolved_fps = _normalize_input(data, fps, angles=angles)
     det = _make_detector(
         method,
         resolved_fps,
@@ -400,7 +404,7 @@ def detect(
     )
 
 
-def _normalize_input(data, fps):
+def _normalize_input(data, fps, *, angles=None):
     """Convert various input formats to (angle_frames, fps)."""
     if fps is not None:
         if not isinstance(fps, (int, float)) or fps <= 0:
@@ -413,7 +417,7 @@ def _normalize_input(data, fps):
         p = Path(data)
         if p.suffix.lower() == ".c3d":
             from ._io import load_c3d
-            trial = load_c3d(str(p))
+            trial = load_c3d(str(p), angles=angles)
             if not trial["angle_frames"]:
                 raise ValueError("No angle frames were found in the C3D file")
             if trial["fps"] <= 0:

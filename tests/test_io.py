@@ -10,11 +10,12 @@ from pathlib import Path
 from unittest import mock
 
 import numpy as np
+from scipy.io import savemat
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "python" / "src"))
 
-from gaitkit import _io
+from gaitkit import _io, _core
 
 
 class TestLoadC3D(unittest.TestCase):
@@ -136,6 +137,46 @@ class TestLoadC3D(unittest.TestCase):
                 with self.assertRaises(ValueError) as ctx:
                     _io.load_c3d(str(c3d_path), marker_set="auto")
         self.assertIn("Detected labels", str(ctx.exception))
+
+    def test_load_angles_file_from_mapping(self):
+        angles = {
+            "Lhip": np.arange(10, dtype=float),
+            "Rhip": np.arange(10, dtype=float) + 1,
+            "Lknee": np.arange(10, dtype=float) + 2,
+            "Rknee": np.arange(10, dtype=float) + 3,
+            "Lankle": np.arange(10, dtype=float) + 4,
+            "Rankle": np.arange(10, dtype=float) + 5,
+        }
+        out = _io.load_angles_file(angles, n_frames=8)
+        self.assertEqual(set(out.keys()), {
+            "left_hip_angle", "right_hip_angle",
+            "left_knee_angle", "right_knee_angle",
+            "left_ankle_angle", "right_ankle_angle",
+        })
+        self.assertEqual(len(out["left_hip_angle"]), 8)
+        self.assertEqual(out["right_ankle_angle"][0], 5.0)
+
+    def test_load_angles_file_from_mat_res_angles_t(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "angles.mat"
+            dtype = [
+                ("Lhip", "O"), ("Rhip", "O"),
+                ("Lknee", "O"), ("Rknee", "O"),
+                ("Lankle", "O"), ("Rankle", "O"),
+            ]
+            arr = np.zeros((1, 1), dtype=dtype)
+            base = np.column_stack([np.arange(6, dtype=float), np.zeros(6), np.zeros(6)])
+            for name in ("Lhip", "Rhip", "Lknee", "Rknee", "Lankle", "Rankle"):
+                arr[name][0, 0] = base
+            savemat(path, {"res_angles_t": arr})
+            out = _io.load_angles_file(path, n_frames=6)
+        self.assertIn("left_hip_angle", out)
+        self.assertEqual(out["left_hip_angle"][3], 3.0)
+
+    def test_normalize_input_passes_angles_to_load_c3d(self):
+        with mock.patch("gaitkit._io.load_c3d", return_value={"angle_frames": [{"frame_index": 0}], "fps": 100.0}):
+            _core._normalize_input("dummy.c3d", fps=None, angles="angles.mat")
+            _io.load_c3d.assert_called_once_with("dummy.c3d", angles="angles.mat")
 
     def test_angle_extraction_failure_is_non_blocking(self):
         # Include an angle label that does not exist in points data to force IndexError

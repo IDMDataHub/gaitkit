@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 Point3D = Tuple[float, float, float]
 MarkerSpec = Union[str, Sequence[str]]
+AnglesLike = Union[str, Path, Mapping[str, Sequence[float]]]
 
 
 _MARKER_MAPS: Dict[str, Dict[str, List[MarkerSpec]]] = {
@@ -184,12 +185,137 @@ def list_examples() -> list:
     return ["healthy", "parkinson", "kuopio", "stroke"]
 
 
+_ANGLE_KEYS = [
+    "left_hip_angle",
+    "right_hip_angle",
+    "left_knee_angle",
+    "right_knee_angle",
+    "left_ankle_angle",
+    "right_ankle_angle",
+]
+
+_ANGLE_ALIASES: Dict[str, Tuple[str, ...]] = {
+    "left_hip_angle": ("left_hip_angle", "lhip", "hip_l", "hip_left", "l_hip", "lhipangles"),
+    "right_hip_angle": ("right_hip_angle", "rhip", "hip_r", "hip_right", "r_hip", "rhipangles"),
+    "left_knee_angle": ("left_knee_angle", "lknee", "knee_l", "knee_left", "l_knee", "lkneeangles"),
+    "right_knee_angle": ("right_knee_angle", "rknee", "knee_r", "knee_right", "r_knee", "rkneeangles"),
+    "left_ankle_angle": ("left_ankle_angle", "lankle", "ankle_l", "ankle_left", "l_ankle", "lankleangles"),
+    "right_ankle_angle": ("right_ankle_angle", "rankle", "ankle_r", "ankle_right", "r_ankle", "rankleangles"),
+}
+
+
+def _norm_key(name: str) -> str:
+    return "".join(ch for ch in name.lower() if ch.isalnum())
+
+
+def _extract_1d_angle(values, n_frames: int) -> Optional[List[float]]:
+    try:
+        import numpy as np
+    except ImportError:  # pragma: no cover
+        return None
+    arr = np.asarray(values)
+    if arr.size == 0:
+        return None
+    arr = np.squeeze(arr)
+    if arr.ndim == 1:
+        series = arr.astype(float)
+    elif arr.ndim == 2:
+        # Convention used in VICON exports: first column = flex/ext
+        series = arr[:, 0].astype(float)
+    else:
+        return None
+    if series.shape[0] < n_frames:
+        return None
+    return series[:n_frames].tolist()
+
+
+def _load_angles_from_mapping(angles: Mapping[str, Sequence[float]], n_frames: int) -> Dict[str, List[float]]:
+    out: Dict[str, List[float]] = {}
+    keyed = {_norm_key(k): v for k, v in angles.items()}
+    for target in _ANGLE_KEYS:
+        for alias in _ANGLE_ALIASES[target]:
+            raw = keyed.get(_norm_key(alias))
+            if raw is None:
+                continue
+            series = _extract_1d_angle(raw, n_frames)
+            if series is not None:
+                out[target] = series
+                break
+    return out
+
+
+def _load_angles_from_mat(path: Path, n_frames: int) -> Dict[str, List[float]]:
+    from scipy.io import loadmat
+
+    mat = loadmat(str(path))
+    # Preferred structure from premanip-pipeline: res_angles_t struct with fields Lhip/Lknee/...
+    if "res_angles_t" in mat:
+        struct = mat["res_angles_t"][0, 0]
+        extracted = {}
+        for target, aliases in _ANGLE_ALIASES.items():
+            for alias in aliases:
+                # Mat field names are case-sensitive. Try direct matches first.
+                candidates = [alias, alias.upper(), alias.capitalize()]
+                for c in candidates:
+                    if c in struct.dtype.names:
+                        series = _extract_1d_angle(struct[c], n_frames)
+                        if series is not None:
+                            extracted[target] = series
+                            break
+                if target in extracted:
+                    break
+        if extracted:
+            return extracted
+
+    # Fallback: flat variables in .mat
+    return _load_angles_from_mapping(mat, n_frames)
+
+
+def _load_angles_from_csv(path: Path, n_frames: int) -> Dict[str, List[float]]:
+    import pandas as pd
+
+    df = pd.read_csv(path)
+    return _load_angles_from_mapping(df.to_dict(orient="list"), n_frames)
+
+
+def _load_angles_from_json(path: Path, n_frames: int) -> Dict[str, List[float]]:
+    with open(path, encoding="utf-8") as f:
+        payload = json.load(f)
+    if not isinstance(payload, Mapping):
+        return {}
+    return _load_angles_from_mapping(payload, n_frames)
+
+
+def load_angles_file(angles: AnglesLike, n_frames: int) -> Dict[str, List[float]]:
+    """Load external joint-angle series from MAT/CSV/JSON or in-memory mapping.
+
+    Returns a dict with canonical keys:
+    ``left_hip_angle``, ``right_hip_angle``, ``left_knee_angle``,
+    ``right_knee_angle``, ``left_ankle_angle``, ``right_ankle_angle``.
+    """
+    if isinstance(angles, Mapping):
+        return _load_angles_from_mapping(angles, n_frames)
+
+    p = Path(angles)
+    if not p.exists():
+        raise FileNotFoundError(f"Angle file not found: {p}")
+    suffix = p.suffix.lower()
+    if suffix == ".mat":
+        return _load_angles_from_mat(p, n_frames)
+    if suffix in {".csv", ".txt"}:
+        return _load_angles_from_csv(p, n_frames)
+    if suffix in {".json"}:
+        return _load_angles_from_json(p, n_frames)
+    raise ValueError(f"Unsupported angle file format: {suffix or '<none>'}")
+
+
 # ── C3D loading ──────────────────────────────────────────────────────
 
 def load_c3d(
     path: str,
     marker_set: str = "auto",
     marker_map: Optional[Mapping[str, MarkerSpec]] = None,
+    angles: Optional[AnglesLike] = None,
 ) -> dict:
     """Load a C3D file and extract angle frames.
 
@@ -202,6 +328,9 @@ def load_c3d(
     marker_map : dict, optional
         Custom mapping ``canonical_name -> label_or_pair`` used instead of presets.
         Example: ``{"left_heel": "LCAL", "left_ankle": ("LMM", "LLM")}``.
+    angles : str, Path, or dict, optional
+        Optional external angle source (MAT/CSV/JSON or in-memory mapping).
+        When provided, these values override angle fields extracted from C3D.
 
     Returns
     -------
@@ -309,6 +438,19 @@ def load_c3d(
                     angle_frames[fi][angle_key] = float(points[0, li, fi])
     except (KeyError, TypeError, ValueError, IndexError) as exc:
         logger.debug("Could not extract model angles from C3D payload: %s", exc)
+
+    # Optional external angles override
+    if angles is not None:
+        ext = load_angles_file(angles, n_frames=n_frames)
+        if not ext:
+            raise ValueError(
+                f"No usable angle columns were found in '{angles}'. "
+                "Expected aliases like Lhip/Rhip/Lknee/Rknee/Lankle/Rankle or "
+                "left_hip_angle/right_hip_angle/etc."
+            )
+        for fi in range(n_frames):
+            for key, series in ext.items():
+                angle_frames[fi][key] = float(series[fi])
 
     return {
         "angle_frames": angle_frames,

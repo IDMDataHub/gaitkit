@@ -46,7 +46,7 @@ gaitkit.installPythonBackend()   % one-time setup
 
 ```bash
 pip install gaitkit            # core (NumPy + SciPy)
-pip install gaitkit[all]       # with ONNX, visualization, C3D support
+pip install gaitkit[all]       # with ONNX + deep-learning + visualization extras
 ```
 
 DeepEvent model weights (`DeepEventWeight.h5`) are downloaded automatically
@@ -93,6 +93,9 @@ events = gaitkit.detect(trial, method="bike")
 
 print(events.left_hs)   # list of {frame, time, side, confidence}
 print(events.right_to)
+
+# Optional: merge external angles (MAT/CSV/JSON) with C3D markers
+events_with_angles = gaitkit.detect("walk_01.c3d", angles="res_angles_t.mat", method="bike")
 ```
 
 ### R
