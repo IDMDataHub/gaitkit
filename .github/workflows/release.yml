@@ -17,6 +17,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          lfs: true
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -26,6 +28,17 @@ jobs:
       - name: Build package
         run: |
           python -m pip install --upgrade pip build twine
+          python - <<'PY'
+          from pathlib import Path
+          base = Path("python/src/gaitkit/data")
+          for name in ("ic_intellevent.onnx", "fo_intellevent.onnx"):
+              p = base / name
+              if not p.exists():
+                  raise SystemExit(f"Missing ONNX model: {p}")
+              head = p.read_bytes()[:200]
+              if head.startswith(b"version https://git-lfs.github.com/spec/v1"):
+                  raise SystemExit(f"ONNX model is a Git LFS pointer, not binary: {p}")
+          PY
           cd python
           python -m build
           # First release path: publish source distribution only.

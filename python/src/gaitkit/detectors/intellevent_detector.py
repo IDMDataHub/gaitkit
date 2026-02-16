@@ -51,6 +51,16 @@ except ImportError:
     ONNX_AVAILABLE = False
 
 
+def _looks_like_lfs_pointer(path: Path) -> bool:
+    """Return True when a file appears to be a Git LFS pointer text file."""
+    try:
+        with open(path, "rb") as f:
+            head = f.read(200)
+    except OSError:
+        return False
+    return head.startswith(b"version https://git-lfs.github.com/spec/v1")
+
+
 @dataclass
 class GaitEvent:
     """A single gait event."""
@@ -114,9 +124,29 @@ class IntellEventDetector:
             raise FileNotFoundError(
                 f"IntellEvent ONNX models not found in {models_dir}. "
                 "Install with: pip install gaitkit[onnx]")
+        self.ic_session = self._load_onnx_session(ic_path, "IC")
+        self.fo_session = self._load_onnx_session(fo_path, "FO")
 
-        self.ic_session = ort.InferenceSession(str(ic_path))
-        self.fo_session = ort.InferenceSession(str(fo_path))
+    def _load_onnx_session(self, model_path: Path, model_name: str):
+        """Load one ONNX session with actionable diagnostics on failure."""
+        if _looks_like_lfs_pointer(model_path):
+            raise RuntimeError(
+                f"IntellEvent {model_name} model at '{model_path}' is a Git LFS pointer, "
+                "not the real ONNX binary. Reinstall gaitkit from PyPI with:\n"
+                "  pip install --no-cache-dir --force-reinstall \"gaitkit[onnx]\""
+            )
+        try:
+            return ort.InferenceSession(str(model_path))
+        except Exception as exc:
+            size = model_path.stat().st_size if model_path.exists() else 0
+            raise RuntimeError(
+                f"Failed to load IntellEvent {model_name} model from '{model_path}' "
+                f"(size={size} bytes). The file may be corrupted or incomplete "
+                "(e.g., cloud sync/partial download). Reinstall gaitkit with:\n"
+                "  pip uninstall -y gaitkit onnxruntime\n"
+                "  pip cache purge\n"
+                "  pip install --no-cache-dir --force-reinstall \"gaitkit[onnx]\""
+            ) from exc
 
     def _get_marker_trajectories(self, angle_frames) -> Dict[str, np.ndarray]:
         """Extract marker trajectories from angle frames."""
