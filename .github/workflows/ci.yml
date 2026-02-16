@@ -85,6 +85,9 @@ jobs:
         with:
           r-version: devel
 
+      - name: Setup Pandoc
+        uses: r-lib/actions/setup-pandoc@v2
+
       - name: Install system dependencies
         run: |
           sudo apt-get update
@@ -103,4 +106,5 @@ jobs:
         run: |
           cd r
           R CMD build .
-          R CMD check gaitkit_0.1.0.tar.gz --as-cran --no-manual
+          PKG_TGZ=$(ls -1 gaitkit_*.tar.gz | head -n 1)
+          R CMD check "$PKG_TGZ" --as-cran --no-manual
