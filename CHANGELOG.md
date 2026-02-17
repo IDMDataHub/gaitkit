@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 1.2.3 (2026-02-17)
+
+### Fixed
+- Improved C3D opening diagnostics for Windows/OneDrive path issues.
+- Added strict optional core-marker validation for marker-only C3D workflows.
+- Added label normalization for common vendor suffixes (e.g. `LHEE:1`).
+
 ## 1.2.2 (2026-02-16)
 
 ### Fixed
