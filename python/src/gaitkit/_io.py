@@ -60,6 +60,24 @@ _MARKER_MAPS: Dict[str, Dict[str, List[MarkerSpec]]] = {
     },
 }
 
+_CORE_PROXY_MARKERS: Tuple[str, ...] = (
+    "left_heel",
+    "right_heel",
+    "left_toe",
+    "right_toe",
+    "left_ankle",
+    "right_ankle",
+    "left_knee",
+    "right_knee",
+    "left_hip",
+    "right_hip",
+)
+
+
+def _normalize_label_key(label: str) -> str:
+    # Accept common vendor variants such as LHEE:1, LHEE.1, "L HEE".
+    return "".join(ch for ch in str(label).upper() if ch.isalnum())
+
 
 def _open_c3d_with_diagnostics(path: Union[str, Path]):
     try:
@@ -90,7 +108,9 @@ def _open_c3d_with_diagnostics(path: Union[str, Path]):
 
 
 def _get_point(idx: Mapping[str, int], points, frame_index: int, label: str) -> Optional[Point3D]:
-    li = idx.get(label.upper())
+    li = idx.get(str(label).upper())
+    if li is None:
+        li = idx.get(_normalize_label_key(label))
     if li is None:
         return None
     return (
@@ -146,6 +166,22 @@ def _normalize_custom_marker_map(marker_map: Mapping[str, MarkerSpec]) -> Dict[s
             if not seq:
                 raise ValueError(f"marker_map entry for '{canonical}' is empty")
             out[canonical] = [tuple(seq) if len(seq) > 1 else seq[0]]
+    return out
+
+
+def _spec_is_available(idx: Mapping[str, int], spec: MarkerSpec) -> bool:
+    if isinstance(spec, str):
+        return str(spec).upper() in idx or _normalize_label_key(spec) in idx
+    seq = list(spec)
+    return any((str(s).upper() in idx or _normalize_label_key(s) in idx) for s in seq)
+
+
+def _available_canonical_markers(
+    idx: Mapping[str, int], resolved_map: Mapping[str, Sequence[MarkerSpec]]
+) -> Dict[str, bool]:
+    out: Dict[str, bool] = {}
+    for canonical, specs in resolved_map.items():
+        out[canonical] = any(_spec_is_available(idx, s) for s in specs)
     return out
 
 # ── Bundled examples ─────────────────────────────────────────────────
@@ -694,6 +730,7 @@ def load_c3d(
     marker_map: Optional[Mapping[str, MarkerSpec]] = None,
     angles: Optional[AnglesLike] = None,
     angles_align: str = "auto",
+    require_core_markers: bool = False,
 ) -> dict:
     """Load a C3D file and extract angle frames.
 
@@ -713,6 +750,9 @@ def load_c3d(
         External angle alignment mode when lengths differ from C3D:
         ``"auto"`` (default), ``"second_hs"``, ``"first_hs"``, ``"none"``,
         or ``"resample"``.
+    require_core_markers : bool
+        If ``True``, require a core marker set (heel/toe/ankle/knee/hip on both
+        sides) when proxy angles must be computed from markers.
 
     Returns
     -------
@@ -742,8 +782,13 @@ def load_c3d(
     labels = [l.strip() for l in labels]
     n_frames = points.shape[2]
 
-    # Build label -> index mapping
-    idx = {l.upper(): i for i, l in enumerate(labels)}
+    # Build label -> index mapping (raw + normalized aliases).
+    idx: Dict[str, int] = {}
+    for i, l in enumerate(labels):
+        idx[str(l).upper()] = i
+        norm = _normalize_label_key(l)
+        if norm and norm not in idx:
+            idx[norm] = i
 
     # Detect marker set
     marker_set = marker_set.lower().strip()
@@ -765,6 +810,7 @@ def load_c3d(
                 f"Unknown marker_set {marker_set!r}. Expected 'auto', 'pig', 'isb', or 'imy'."
             )
         resolved_map = _MARKER_MAPS[marker_set]
+    available_markers = _available_canonical_markers(idx, resolved_map)
 
     # Extract landmarks per frame
     angle_frames = []
@@ -796,6 +842,7 @@ def load_c3d(
         )
 
     # Try to extract angles from MODEL outputs
+    has_model_angles = False
     try:
         # Check for computed angles (PiG model output)
         for angle_key, angle_label in [
@@ -808,6 +855,7 @@ def load_c3d(
         ]:
             li = idx.get(angle_label.upper())
             if li is not None:
+                has_model_angles = True
                 for fi in range(n_frames):
                     angle_frames[fi][angle_key] = float(points[0, li, fi])
     except (KeyError, TypeError, ValueError, IndexError) as exc:
@@ -845,6 +893,17 @@ def load_c3d(
         # If no model angles are available in C3D payload, compute proxy
         # sagittal angles directly from marker geometry.
         import numpy as np
+        if not has_model_angles:
+            missing_core = [k for k in _CORE_PROXY_MARKERS if not available_markers.get(k, False)]
+            if missing_core:
+                msg = (
+                    "C3D does not include model angles and is missing core markers "
+                    f"required for robust proxy-angle computation: {missing_core}. "
+                    "Provide a marker_map and/or external angles (MAT/CSV/JSON)."
+                )
+                if require_core_markers:
+                    raise ValueError(msg)
+                logger.warning(msg)
 
         proxy_profile = "imy" if marker_set == "imy" else "default"
         proxy = compute_marker_proxy_angles(angle_frames, profile=proxy_profile)
@@ -866,5 +925,11 @@ def load_c3d(
         "fps": fps,
         "n_frames": n_frames,
         "proxy_profile": proxy_profile if angles is None else "external_override",
+        "diagnostics": {
+            "marker_set": marker_set,
+            "available_markers": available_markers,
+            "missing_core_markers": [k for k in _CORE_PROXY_MARKERS if not available_markers.get(k, False)],
+            "has_model_angles": bool(has_model_angles),
+        },
         "source_file": str(c3d_path),
     }

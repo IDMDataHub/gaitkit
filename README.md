@@ -96,7 +96,14 @@ print(events.right_to)
 
 # Optional: merge external angles (MAT/CSV/JSON) with C3D markers
 events_with_angles = gaitkit.detect("walk_01.c3d", angles="res_angles_t.mat", method="bike")
+
+# Optional: enforce a strict core marker set for marker-only C3D files
+trial_strict = gaitkit.load_c3d("walk_01.c3d", require_core_markers=True)
 ```
+
+Marker-only C3D processing is most robust when these canonical landmarks are
+available on both sides: `heel`, `toe`, `ankle`, `knee`, `hip`.
+If your labels differ, pass a custom `marker_map`.
 
 ### R
 

@@ -111,6 +111,8 @@ class TestLoadC3D(unittest.TestCase):
         self.assertIn("right_heel", lp0)
         self.assertIn("left_toe", lp0)
         self.assertIn("right_toe", lp0)
+        self.assertIn("diagnostics", out)
+        self.assertIn("available_markers", out["diagnostics"])
 
     def test_custom_marker_map_is_supported(self):
         labels = ["XH", "YH", "XT", "YT", "XA", "YA"]
@@ -145,6 +147,77 @@ class TestLoadC3D(unittest.TestCase):
         lp0 = out["angle_frames"][0]["landmark_positions"]
         self.assertIn("left_heel", lp0)
         self.assertIn("right_toe", lp0)
+
+    def test_label_normalization_accepts_vendor_suffixes(self):
+        labels = [
+            "LHEE:1", "RHEE:1", "LTOE:1", "RTOE:1",
+            "LANK:1", "RANK:1", "LKNE:1", "RKNE:1", "LASI:1", "RASI:1", "SACR:1",
+        ]
+        points = np.zeros((4, len(labels), 2), dtype=float)
+        fake_ezc3d = types.SimpleNamespace(
+            c3d=lambda _path: {
+                "header": {"points": {"frame_rate": 100.0}},
+                "data": {"points": points},
+                "parameters": {"POINT": {"LABELS": {"value": labels}}},
+            }
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            c3d_path = Path(tmp) / "suffixes.c3d"
+            c3d_path.write_bytes(b"")
+            with mock.patch.dict(sys.modules, {"ezc3d": fake_ezc3d}):
+                out = _io.load_c3d(str(c3d_path), marker_set="auto")
+        lp0 = out["angle_frames"][0]["landmark_positions"]
+        self.assertIsNotNone(lp0)
+        self.assertIn("left_heel", lp0)
+        self.assertIn("right_toe", lp0)
+
+    def test_require_core_markers_raises_without_proxy_minimum(self):
+        labels = ["LHEE", "RHEE", "LTOE", "RTOE"]
+        points = np.zeros((4, len(labels), 3), dtype=float)
+        fake_ezc3d = types.SimpleNamespace(
+            c3d=lambda _path: {
+                "header": {"points": {"frame_rate": 100.0}},
+                "data": {"points": points},
+                "parameters": {"POINT": {"LABELS": {"value": labels}}},
+            }
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            c3d_path = Path(tmp) / "minimal.c3d"
+            c3d_path.write_bytes(b"")
+            with mock.patch.dict(sys.modules, {"ezc3d": fake_ezc3d}):
+                with self.assertRaises(ValueError) as ctx:
+                    _io.load_c3d(str(c3d_path), marker_set="pig", require_core_markers=True)
+        self.assertIn("missing core markers", str(ctx.exception))
+
+    def test_require_core_markers_is_bypassed_when_external_angles_provided(self):
+        labels = ["LHEE", "RHEE", "LTOE", "RTOE"]
+        points = np.zeros((4, len(labels), 5), dtype=float)
+        fake_ezc3d = types.SimpleNamespace(
+            c3d=lambda _path: {
+                "header": {"points": {"frame_rate": 100.0}},
+                "data": {"points": points},
+                "parameters": {"POINT": {"LABELS": {"value": labels}}},
+            }
+        )
+        angles = {
+            "Lhip": [1, 2, 3, 4, 5],
+            "Rhip": [1, 2, 3, 4, 5],
+            "Lknee": [1, 2, 3, 4, 5],
+            "Rknee": [1, 2, 3, 4, 5],
+            "Lankle": [1, 2, 3, 4, 5],
+            "Rankle": [1, 2, 3, 4, 5],
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            c3d_path = Path(tmp) / "external_ok.c3d"
+            c3d_path.write_bytes(b"")
+            with mock.patch.dict(sys.modules, {"ezc3d": fake_ezc3d}):
+                out = _io.load_c3d(
+                    str(c3d_path),
+                    marker_set="pig",
+                    require_core_markers=True,
+                    angles=angles,
+                )
+        self.assertEqual(out["n_frames"], 5)
 
     def test_no_supported_marker_error_lists_detected_labels(self):
         labels = ["A", "B", "C"]
