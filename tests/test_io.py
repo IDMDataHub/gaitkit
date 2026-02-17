@@ -42,6 +42,20 @@ class TestLoadC3D(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
             _io.load_c3d("missing_file.c3d")
 
+    def test_load_c3d_wraps_ezc3d_open_error_with_actionable_hints(self):
+        fake_ezc3d = types.SimpleNamespace(
+            c3d=lambda _path: (_ for _ in ()).throw(OSError("iostream stream error"))
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            c3d_path = Path(tmp) / "broken.c3d"
+            c3d_path.write_bytes(b"")
+            with mock.patch.dict(sys.modules, {"ezc3d": fake_ezc3d}):
+                with self.assertRaises(OSError) as ctx:
+                    _io.load_c3d(str(c3d_path))
+        msg = str(ctx.exception).lower()
+        self.assertIn("could not open c3d file", msg)
+        self.assertIn("onedrive", msg)
+
     def test_invalid_marker_set_raises(self):
         fake_ezc3d = types.SimpleNamespace(
             c3d=lambda _path: {
@@ -58,6 +72,18 @@ class TestLoadC3D(unittest.TestCase):
                     _io.load_c3d(str(c3d_path), marker_set="unknown")
                 with self.assertRaises(ValueError):
                     _io.load_c3d(str(c3d_path), marker_set="")
+
+    def test_extract_hs_frames_uses_same_open_error_diagnostics(self):
+        fake_ezc3d = types.SimpleNamespace(
+            c3d=lambda _path: (_ for _ in ()).throw(OSError("iostream stream error"))
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            c3d_path = Path(tmp) / "broken_hs.c3d"
+            c3d_path.write_bytes(b"")
+            with mock.patch.dict(sys.modules, {"ezc3d": fake_ezc3d}):
+                with self.assertRaises(OSError) as ctx:
+                    _io._extract_hs_frames_from_c3d(str(c3d_path))
+        self.assertIn("Could not open C3D file", str(ctx.exception))
 
     def test_auto_detects_imy_marker_set(self):
         labels = ["LCAL", "RCAL", "LFMH1", "RFMH1", "LMM", "LLM", "RMM", "RLM", "LASIS", "RASIS"]

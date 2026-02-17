@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from pathlib import Path
 from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
 
@@ -58,6 +59,34 @@ _MARKER_MAPS: Dict[str, Dict[str, List[MarkerSpec]]] = {
         "sacrum": [("LPSIS", "RPSIS"), "LPSIS", "RPSIS"],
     },
 }
+
+
+def _open_c3d_with_diagnostics(path: Union[str, Path]):
+    try:
+        import ezc3d
+    except ImportError:
+        raise ImportError(
+            "ezc3d is required to read C3D files. "
+            "Install with: pip install gaitkit[c3d]"
+        )
+
+    p = Path(path)
+    try:
+        return ezc3d.c3d(str(p))
+    except OSError as exc:
+        msg = str(exc)
+        hints = [
+            "verify the path points to a local readable .c3d file",
+            "if the file is in OneDrive/SharePoint, mark it as 'Always keep on this device'",
+        ]
+        if os.name == "nt":
+            hints.append("move/copy the file to a shorter local path (e.g. C:\\tmp\\trial.c3d)")
+        raise OSError(
+            f"Could not open C3D file '{p}'. ezc3d error: {msg}. "
+            f"Troubleshooting: {', '.join(hints)}."
+        ) from exc
+    except Exception as exc:
+        raise OSError(f"Could not parse C3D file '{p}': {exc}") from exc
 
 
 def _get_point(idx: Mapping[str, int], points, frame_index: int, label: str) -> Optional[Point3D]:
@@ -486,9 +515,8 @@ def compute_marker_proxy_angles(
 
 def _extract_hs_frames_from_c3d(path: Union[str, Path], fps_hint: Optional[float] = None) -> List[int]:
     import numpy as np
-    import ezc3d
 
-    c3d = ezc3d.c3d(str(path))
+    c3d = _open_c3d_with_diagnostics(path)
     fps = float(fps_hint or c3d["header"]["points"]["frame_rate"])
     ev = c3d.get("parameters", {}).get("EVENT", {})
     labels = [str(x).strip() for x in ev.get("LABELS", {}).get("value", [])]
@@ -707,15 +735,7 @@ def load_c3d(
     if not isinstance(marker_set, str) or not marker_set.strip():
         raise ValueError("marker_set must be 'auto', 'pig', 'isb', or 'imy'")
 
-    try:
-        import ezc3d
-    except ImportError:
-        raise ImportError(
-            "ezc3d is required to read C3D files. "
-            "Install with: pip install gaitkit[c3d]"
-        )
-
-    c3d = ezc3d.c3d(str(c3d_path))
+    c3d = _open_c3d_with_diagnostics(c3d_path)
     fps = float(c3d["header"]["points"]["frame_rate"])
     points = c3d["data"]["points"]           # (4, n_markers, n_frames)
     labels = c3d["parameters"]["POINT"]["LABELS"]["value"]
