@@ -340,6 +340,8 @@ def detect(
     units: Optional[Dict[str, str]] = None,
     auto_install_deps: Optional[bool] = None,
     angles=None,
+    angles_align: str = "auto",
+    require_core_markers: bool = False,
 ) -> GaitResult:
     """Detect gait events (heel-strikes and toe-offs).
 
@@ -365,6 +367,13 @@ def detect(
     angles : str, Path, or dict, optional
         Optional external angle source used when ``data`` is a C3D file path.
         Accepted formats: MAT/CSV/JSON files or in-memory mapping.
+    angles_align : str, default "auto"
+        Alignment mode for external angle series when ``data`` is a C3D path.
+        Accepted values: ``"auto"``, ``"second_hs"``, ``"first_hs"``,
+        ``"none"``, ``"resample"``.
+    require_core_markers : bool, default False
+        When ``True`` and ``data`` is a C3D path without model angles, enforce
+        presence of core markers required for robust proxy-angle computation.
 
     Returns
     -------
@@ -378,7 +387,13 @@ def detect(
     >>> result = gaitkit.detect(trial, method="bike")
     >>> result.summary()
     """
-    angle_frames, resolved_fps = _normalize_input(data, fps, angles=angles)
+    angle_frames, resolved_fps = _normalize_input(
+        data,
+        fps,
+        angles=angles,
+        angles_align=angles_align,
+        require_core_markers=require_core_markers,
+    )
     det = _make_detector(
         method,
         resolved_fps,
@@ -404,7 +419,7 @@ def detect(
     )
 
 
-def _normalize_input(data, fps, *, angles=None):
+def _normalize_input(data, fps, *, angles=None, angles_align="auto", require_core_markers=False):
     """Convert various input formats to (angle_frames, fps)."""
     if fps is not None:
         if not isinstance(fps, (int, float)) or fps <= 0:
@@ -417,7 +432,12 @@ def _normalize_input(data, fps, *, angles=None):
         p = Path(data)
         if p.suffix.lower() == ".c3d":
             from ._io import load_c3d
-            trial = load_c3d(str(p), angles=angles)
+            trial = load_c3d(
+                str(p),
+                angles=angles,
+                angles_align=angles_align,
+                require_core_markers=require_core_markers,
+            )
             if not trial["angle_frames"]:
                 raise ValueError("No angle frames were found in the C3D file")
             if trial["fps"] <= 0:

@@ -22,6 +22,13 @@ gk_methods <- function() {
 #'   See \code{gk_methods()} for all options.
 #' @param fps Numeric, sampling frequency in Hz. Required unless \code{data}
 #'   already contains fps information.
+#' @param angles Optional path to external angles (MAT/CSV/JSON) when
+#'   \code{data} is a C3D path.
+#' @param angles_align Alignment mode for external angles on C3D timeline.
+#'   One of \code{"auto"}, \code{"second_hs"}, \code{"first_hs"},
+#'   \code{"none"}, \code{"resample"}.
+#' @param require_core_markers Logical. If \code{TRUE}, enforce presence of
+#'   core gait markers when computing proxy angles from marker-only C3D.
 #'
 #' @return An S3 object of class \code{gaitkit_result} with elements:
 #'   \describe{
@@ -43,7 +50,14 @@ gk_methods <- function() {
 #' summary(result)
 #'
 #' @export
-gk_detect <- function(data, method = "bike", fps = NULL) {
+gk_detect <- function(
+  data,
+  method = "bike",
+  fps = NULL,
+  angles = NULL,
+  angles_align = "auto",
+  require_core_markers = FALSE
+) {
   if (is.character(method) && length(method) == 1L) {
     method <- trimws(method)
   }
@@ -54,6 +68,20 @@ gk_detect <- function(data, method = "bike", fps = NULL) {
     if (!is.numeric(fps) || length(fps) != 1L || is.na(fps) || fps <= 0) {
       stop("'fps' must be a positive numeric scalar", call. = FALSE)
     }
+  }
+  if (!is.null(angles)) {
+    if (!is.character(angles) || length(angles) != 1L || !nzchar(trimws(angles))) {
+      stop("'angles' must be a non-empty file path when provided", call. = FALSE)
+    }
+  }
+  if (!is.character(angles_align) || length(angles_align) != 1L || !nzchar(trimws(angles_align))) {
+    stop("'angles_align' must be a non-empty character scalar", call. = FALSE)
+  }
+  if (!angles_align %in% c("auto", "second_hs", "first_hs", "none", "resample")) {
+    stop("'angles_align' must be one of: 'auto', 'second_hs', 'first_hs', 'none', 'resample'", call. = FALSE)
+  }
+  if (!is.logical(require_core_markers) || length(require_core_markers) != 1L || is.na(require_core_markers)) {
+    stop("'require_core_markers' must be TRUE or FALSE", call. = FALSE)
   }
 
   if (is.character(data) && length(data) == 1L && nzchar(trimws(data))) {
@@ -77,6 +105,9 @@ gk_detect <- function(data, method = "bike", fps = NULL) {
 
   kwargs <- list(data = py_data, method = method)
   if (!is.null(fps)) kwargs$fps <- as.numeric(fps)
+  if (!is.null(angles)) kwargs$angles <- angles
+  kwargs$angles_align <- angles_align
+  kwargs$require_core_markers <- isTRUE(require_core_markers)
 
   py_result <- do.call(gk$detect, kwargs)
 

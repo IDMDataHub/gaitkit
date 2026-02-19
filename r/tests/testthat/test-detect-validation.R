@@ -23,6 +23,51 @@ test_that("gk_detect validates method and fps before Python bridge", {
     gk_detect(list(foo = 1), method = "bike"),
     "'data' list should contain at least 'angle_frames' or 'fps' fields"
   )
+  expect_error(
+    gk_detect(list(angle_frames = list(), fps = 100), angles = ""),
+    "'angles' must be a non-empty file path when provided"
+  )
+  expect_error(
+    gk_detect(list(angle_frames = list(), fps = 100), angles_align = "bad"),
+    "'angles_align' must be one of"
+  )
+  expect_error(
+    gk_detect(list(angle_frames = list(), fps = 100), require_core_markers = NA),
+    "'require_core_markers' must be TRUE or FALSE"
+  )
+})
+
+test_that("gk_detect forwards C3D angle options to backend", {
+  env <- environment(gk_detect)
+  old_mod <- get(".gk_module", envir = env)
+  old_wrap <- get(".wrap_result", envir = env)
+  on.exit({
+    assign(".gk_module", old_mod, envir = env)
+    assign(".wrap_result", old_wrap, envir = env)
+  }, add = TRUE)
+
+  assign(".gk_module", function() {
+    list(
+      detect = function(...) {
+        list(...)
+      }
+    )
+  }, envir = env)
+  assign(".wrap_result", function(x) x, envir = env)
+
+  out <- gk_detect(
+    "trial.c3d",
+    method = "bike",
+    angles = "angles.mat",
+    angles_align = "second_hs",
+    require_core_markers = TRUE
+  )
+
+  expect_equal(out$data, "trial.c3d")
+  expect_equal(out$method, "bike")
+  expect_equal(out$angles, "angles.mat")
+  expect_equal(out$angles_align, "second_hs")
+  expect_true(isTRUE(out$require_core_markers))
 })
 
 test_that("gk_detect_ensemble validates numeric controls before Python bridge", {

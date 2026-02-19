@@ -327,7 +327,12 @@ class TestLoadC3D(unittest.TestCase):
     def test_normalize_input_passes_angles_to_load_c3d(self):
         with mock.patch("gaitkit._io.load_c3d", return_value={"angle_frames": [{"frame_index": 0}], "fps": 100.0}):
             _core._normalize_input("dummy.c3d", fps=None, angles="angles.mat")
-            _io.load_c3d.assert_called_once_with("dummy.c3d", angles="angles.mat")
+            _io.load_c3d.assert_called_once_with(
+                "dummy.c3d",
+                angles="angles.mat",
+                angles_align="auto",
+                require_core_markers=False,
+            )
 
     def test_angle_extraction_failure_is_non_blocking(self):
         # Include an angle label that does not exist in points data to force IndexError
