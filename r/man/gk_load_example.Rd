@@ -17,7 +17,7 @@ and \code{population}.
 Loads one of the gait examples bundled with the Python backend.
 }
 \examples{
-\dontrun{
+\donttest{
 trial <- gk_load_example("healthy")
 trial$fps
 }

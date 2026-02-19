@@ -12,7 +12,7 @@ Returns the list of example datasets that can be loaded with
 \code{gk_load_example()}.
 }
 \examples{
-\dontrun{
+\donttest{
 gk_list_examples()
 }
 }

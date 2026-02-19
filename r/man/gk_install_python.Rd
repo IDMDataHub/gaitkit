@@ -22,7 +22,7 @@ or selected reticulate environment. Installation failures are rethrown with
 an actionable message that includes the original error.
 }
 \examples{
-\dontrun{
+\donttest{
 gk_install_python()
 gk_install_python(package = "gaitkit[all]")
 }

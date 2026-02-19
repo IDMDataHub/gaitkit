@@ -26,7 +26,7 @@ Runs a single gait-event detector on motion capture input through the Python
 \pkg{gaitkit} backend.
 }
 \examples{
-\dontrun{
+\donttest{
 trial <- gk_load_example("healthy")
 result <- gk_detect(trial, method = "bike")
 print(result)

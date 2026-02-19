@@ -1,15 +1,20 @@
 Package: gaitkit
 Type: Package
-Title: Universal Gait Event Detection Toolkit
+Title: Universal Gait Event Detection Toolkit for 'R'
 Version: 1.2.3
 Authors@R: person("Frederic", "Fer",
     email = "f.fer@institut-myologie.org",
     role = c("aut", "cre"))
 Description: Detect heel-strike and toe-off events from motion capture data
-    using 10 validated methods (BIKE, Zeni, OConnor, Hreljac, Mickelborough,
-    Ghoussayni, Vancanneyt, DGEI, IntellEvent, DeepEvent). Includes ensemble
-    voting, gait cycle extraction, and publication-ready visualisation.
-    C-accelerated Python backend accessed through 'reticulate'.
+    using 10 validated methods ('BIKE', 'Zeni', 'OConnor', 'Hreljac',
+    'Mickelborough', 'Ghoussayni', 'Vancanneyt', 'DGEI', 'IntellEvent',
+    'DeepEvent'). Includes ensemble voting, gait cycle extraction, and
+    publication-ready visualisation. Uses a C-accelerated 'Python' backend
+    accessed through 'reticulate' from 'R'. Method references include
+    O'Connor et al. (2007) <doi:10.1016/j.gaitpost.2006.05.016> and
+    Zeni et al. (2008) <doi:10.1016/j.gaitpost.2007.07.007>. Additional
+    implementations are documented at
+    <https://github.com/IDMDataHub/gaitkit>.
 License: MIT + file LICENSE
 URL: https://github.com/IDMDataHub/gaitkit
 BugReports: https://github.com/IDMDataHub/gaitkit/issues

@@ -11,7 +11,7 @@ Character vector of method names accepted by \code{gk_detect()}.
 Returns the list of gait-event detection methods available in the Python backend.
 }
 \examples{
-\dontrun{
+\donttest{
 gk_methods()
 }
 }

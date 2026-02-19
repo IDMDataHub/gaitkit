@@ -28,7 +28,7 @@ Runs multiple detectors and combines their outputs with temporal clustering and
 majority voting.
 }
 \examples{
-\dontrun{
+\donttest{
 trial <- gk_load_example("healthy")
 res <- gk_detect_ensemble(trial, methods = c("bike", "zeni", "oconnor"))
 }

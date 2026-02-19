@@ -34,7 +34,7 @@ The events plot expects \code{x$events} to include columns
 \code{time}, \code{event_type}, and \code{side}.
 }
 \examples{
-\dontrun{
+\donttest{
 trial <- gk_load_example("healthy")
 res <- gk_detect(trial)
 print(res)
