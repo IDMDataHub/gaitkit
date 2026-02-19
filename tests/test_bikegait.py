@@ -55,6 +55,48 @@ class TestLegacyCompatibility(unittest.TestCase):
             data = json.loads(Path(paths["json"]).read_text(encoding="utf-8"))
             self.assertEqual(data["meta"]["detector"], "bayesian_bis")
 
+    def test_detect_events_structured_accepts_myogait_payload_path(self):
+        payload = {
+            "myogait_version": "0.1.0",
+            "meta": {"fps": 100.0},
+            "angles": {
+                "frames": [
+                    {
+                        "frame_idx": i,
+                        "trunk_angle": None if i < 3 else 0.0,
+                        "pelvis_tilt": None if i < 3 else 0.0,
+                        "hip_L": None if i < 3 else 10.0,
+                        "knee_L": None if i < 3 else 20.0,
+                        "ankle_L": None if i < 3 else 5.0,
+                        "hip_R": None if i < 3 else 11.0,
+                        "knee_R": None if i < 3 else 19.0,
+                        "ankle_R": None if i < 3 else 6.0,
+                        "landmark_positions": {},
+                    }
+                    for i in range(160)
+                ]
+            },
+        }
+        with tempfile.TemporaryDirectory(prefix="gaitkit_test_") as tmp:
+            p = Path(tmp) / "myogait_input.json"
+            p.write_text(json.dumps(payload), encoding="utf-8")
+            out = gaitkit.detect_events_structured("bike", str(p), fps=100.0)
+        self.assertIn("meta", out)
+        self.assertIn("heel_strikes", out)
+        self.assertIn("toe_offs", out)
+
+    def test_export_detection_supports_myogait_events_format(self):
+        trial = gaitkit.load_example("healthy")
+        payload = gaitkit.detect_events_structured("bike", trial["angle_frames"], trial["fps"])
+        with tempfile.TemporaryDirectory(prefix="gaitkit_test_") as tmp:
+            prefix = Path(tmp) / "trial01"
+            paths = gaitkit.export_detection(payload, prefix, formats=("myogait",))
+            self.assertIn("myogait", paths)
+            mg = json.loads(Path(paths["myogait"]).read_text(encoding="utf-8"))
+        self.assertIn("events", mg)
+        self.assertIn("left_hs", mg["events"])
+        self.assertIn("right_to", mg["events"])
+
 
 class TestExampleBikeRegression(unittest.TestCase):
     def test_bike_outputs_are_stable_on_bundled_examples(self):

@@ -10,7 +10,7 @@ import csv
 import json
 import math
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Mapping, Sequence
+from typing import Any, Dict, Iterable, List, Mapping, Sequence, Tuple
 
 from ._core import _dicts_to_angle_frames, detect, list_methods
 
@@ -83,8 +83,11 @@ def build_angle_frames(
             "pelvis_tilt",
             "trunk_angle",
         ):
-            if ang_key in d and d[ang_key] is not None:
-                d[ang_key] = float(d[ang_key]) * ang_scale
+            if ang_key in d:
+                if d[ang_key] is None:
+                    d.pop(ang_key, None)
+                else:
+                    d[ang_key] = float(d[ang_key]) * ang_scale
 
         lp = d.get("landmark_positions")
         if isinstance(lp, Mapping):
@@ -96,6 +99,62 @@ def build_angle_frames(
         dict_frames.append(d)
 
     return _dicts_to_angle_frames(dict_frames)
+
+
+def _normalize_myogait_angle_frame(frame: Mapping[str, Any], index: int) -> Dict[str, Any]:
+    """Map a MyoGait angle frame to gaitkit canonical angle keys."""
+    out: Dict[str, Any] = {
+        "frame_index": int(frame.get("frame_idx", index)),
+        "trunk_angle": frame.get("trunk_angle"),
+        "pelvis_tilt": frame.get("pelvis_tilt"),
+        "left_hip_angle": frame.get("hip_L"),
+        "right_hip_angle": frame.get("hip_R"),
+        "left_knee_angle": frame.get("knee_L"),
+        "right_knee_angle": frame.get("knee_R"),
+        "left_ankle_angle": frame.get("ankle_L"),
+        "right_ankle_angle": frame.get("ankle_R"),
+    }
+    lp = frame.get("landmark_positions")
+    if isinstance(lp, Mapping):
+        out["landmark_positions"] = lp
+    return out
+
+
+def _extract_frames_and_fps(
+    frames: Sequence[Any] | Mapping[str, Any] | str | Path,
+    fps: float,
+) -> Tuple[Sequence[Any], float]:
+    """Accept raw frame sequences or MyoGait JSON payload/path."""
+    # Path to JSON payload
+    if isinstance(frames, (str, Path)):
+        p = Path(frames)
+        if p.suffix.lower() == ".json" and p.exists():
+            payload = json.loads(p.read_text(encoding="utf-8"))
+            return _extract_frames_and_fps(payload, fps)
+        raise ValueError("frames path must point to an existing .json file")
+
+    # MyoGait payload as mapping
+    if isinstance(frames, Mapping):
+        if "angles" in frames and isinstance(frames["angles"], Mapping):
+            angle_frames = frames["angles"].get("frames", [])
+            if not isinstance(angle_frames, Sequence):
+                raise ValueError("Invalid myogait payload: angles.frames must be a sequence")
+            norm = [
+                _normalize_myogait_angle_frame(fr, i)
+                for i, fr in enumerate(angle_frames)
+                if isinstance(fr, Mapping)
+            ]
+            resolved_fps = float(
+                frames.get("meta", {}).get("fps", fps) if isinstance(frames.get("meta"), Mapping) else fps
+            )
+            return norm, resolved_fps
+        if "frames" in frames and isinstance(frames["frames"], Sequence):
+            # Generic mapping wrapper around raw frames
+            return frames["frames"], fps
+        raise ValueError("Unsupported mapping input: expected myogait payload with angles.frames")
+
+    # Original list-of-frames path
+    return frames, fps
 
 
 def _cycles_from_events(
@@ -138,7 +197,7 @@ def _cycles_from_events(
 
 def detect_events_structured(
     method: str,
-    frames: Sequence[Any],
+    frames: Sequence[Any] | Mapping[str, Any] | str | Path,
     fps: float,
     units: Mapping[str, str] | None = None,
 ) -> Dict[str, Any]:
@@ -151,8 +210,9 @@ def detect_events_structured(
     if not isinstance(method, str) or not method.strip():
         raise ValueError("method must be a non-empty string")
 
-    af = build_angle_frames(frames, units=units)
-    result = detect(af, method=method, fps=float(fps))
+    resolved_frames, resolved_fps = _extract_frames_and_fps(frames, float(fps))
+    af = build_angle_frames(resolved_frames, units=units)
+    result = detect(af, method=method, fps=float(resolved_fps))
 
     heel_strikes = []
     toe_offs = []
@@ -201,7 +261,7 @@ def detect_events_structured(
     return {
         "meta": {
             "detector": result.method,
-            "fps_hz": float(fps),
+            "fps_hz": float(resolved_fps),
             "n_frames": int(result.n_frames),
             "available_methods": list_methods(),
         },
@@ -216,7 +276,7 @@ def export_detection(
     output_prefix: str | Path,
     formats: Iterable[str] = ("json",),
 ) -> Dict[str, str]:
-    """Export legacy structured payload to JSON/CSV/XLSX."""
+    """Export legacy structured payload to JSON/CSV/XLSX/MyoGait events JSON."""
     if not isinstance(payload, Mapping):
         raise ValueError("payload must be a mapping")
 
@@ -228,7 +288,7 @@ def export_detection(
         wanted = [str(f).lower().strip() for f in formats]
     if not wanted:
         raise ValueError("formats must not be empty")
-    allowed = {"json", "csv", "xlsx"}
+    allowed = {"json", "csv", "xlsx", "myogait"}
     unknown = [f for f in wanted if f not in allowed]
     if unknown:
         raise ValueError(f"Unknown export format(s): {unknown}. Allowed: {sorted(allowed)}")
@@ -290,5 +350,39 @@ def export_detection(
             ws2.append([row.get(c) for c in cy_cols])
         wb.save(x_path)
         written["xlsx"] = str(x_path)
+
+    if "myogait" in wanted:
+        mg_path = prefix.with_name(prefix.name + "_myogait_events").with_suffix(".json")
+        fps = float(payload.get("meta", {}).get("fps_hz", 0.0)) if isinstance(payload.get("meta"), Mapping) else 0.0
+
+        def _pack(side_events):
+            out = []
+            for ev in side_events:
+                frame = int(ev.get("frame_index", 0))
+                out.append(
+                    {
+                        "frame": frame,
+                        "time": float(ev.get("time_s", frame / fps if fps > 0 else 0.0)),
+                        "confidence": float(ev.get("confidence", 1.0)),
+                    }
+                )
+            return out
+
+        left_hs = [e for e in payload.get("heel_strikes", []) if str(e.get("side", "")).lower() == "left"]
+        right_hs = [e for e in payload.get("heel_strikes", []) if str(e.get("side", "")).lower() == "right"]
+        left_to = [e for e in payload.get("toe_offs", []) if str(e.get("side", "")).lower() == "left"]
+        right_to = [e for e in payload.get("toe_offs", []) if str(e.get("side", "")).lower() == "right"]
+        mg = {
+            "events": {
+                "method": payload.get("meta", {}).get("detector") if isinstance(payload.get("meta"), Mapping) else None,
+                "fps": fps if fps > 0 else None,
+                "left_hs": _pack(left_hs),
+                "right_hs": _pack(right_hs),
+                "left_to": _pack(left_to),
+                "right_to": _pack(right_to),
+            }
+        }
+        mg_path.write_text(json.dumps(mg, ensure_ascii=False, indent=2), encoding="utf-8")
+        written["myogait"] = str(mg_path)
 
     return written
