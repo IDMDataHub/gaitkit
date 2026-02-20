@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## 1.2.4 (2026-02-20)
+
+### Added
+- BikeGait compatibility now supports MyoGait JSON payloads as input.
+- Added MyoGait-compatible event export format (`formats=("myogait",)`).
+
+### Improved
+- R `gk_detect()` now forwards C3D angle options (`angles`, `angles_align`,
+  `require_core_markers`) to the Python backend.
+- Added regression tests for MyoGait payload handling and R argument forwarding.
+
 ## 1.2.3 (2026-02-17)
 
 ### Fixed
