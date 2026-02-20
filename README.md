@@ -15,7 +15,7 @@ C-accelerated backends, accessible from Python, R, and MATLAB.
 
 ## Installation
 
-Current status: PyPI release available (`gaitkit==1.2.2`), release `1.2.3` in progress, CRAN submission in progress.
+Current status: PyPI release available (`gaitkit==1.2.3`), release `1.2.4` in progress, CRAN submission in progress.
 
 **Install from local source (recommended for now)**
 
@@ -105,6 +105,62 @@ Marker-only C3D processing is most robust when these canonical landmarks are
 available on both sides: `heel`, `toe`, `ankle`, `knee`, `hip`.
 If your labels differ, pass a custom `marker_map`.
 
+### Proprietary JSON compatibility (MyoGait-like)
+
+`gaitkit.detect_events_structured(...)` also accepts a proprietary payload with
+`angles.frames` (dictionary or `.json` file path). Example:
+
+```python
+payload = gaitkit.detect_events_structured(
+    "bike",
+    "myogait_output_no_events.json",  # or a loaded dict payload
+    fps=100.0
+)
+```
+
+The helper `gaitkit.export_detection(...)` can export standard formats and a
+MyoGait-compatible events JSON:
+
+```python
+paths = gaitkit.export_detection(payload, "out/trial_07", formats=("json", "myogait"))
+print(paths["myogait"])  # out/trial_07_myogait_events.json
+```
+
+Expected proprietary JSON shape (input):
+
+```json
+{
+  "meta": { "fps": 100.0 },
+  "angles": {
+    "frames": [
+      {
+        "frame_idx": 0,
+        "hip_L": 10.2, "knee_L": 20.1, "ankle_L": -2.3,
+        "hip_R": 11.0, "knee_R": 18.5, "ankle_R": -1.8,
+        "pelvis_tilt": 3.1,
+        "trunk_angle": 5.4,
+        "landmark_positions": { "left_heel": [0.0, 0.0, 0.0] }
+      }
+    ]
+  }
+}
+```
+
+MyoGait-compatible output (`formats=("myogait",)`):
+
+```json
+{
+  "events": {
+    "method": "bike",
+    "fps": 100.0,
+    "left_hs": [{ "frame": 123, "time": 1.23, "confidence": 1.0 }],
+    "right_hs": [],
+    "left_to": [],
+    "right_to": []
+  }
+}
+```
+
 ### R
 
 ```r
@@ -165,7 +221,7 @@ If you use gaitkit in your research, please cite the software release:
 @software{fer2026gaitkit,
   author  = {Fer, Fr{\'e}d{\'e}ric},
   title   = {gaitkit},
-  version = {1.2.3},
+  version = {1.2.4},
   year    = {2026},
   doi     = {10.5281/zenodo.18653110},
   url     = {https://doi.org/10.5281/zenodo.18653110}

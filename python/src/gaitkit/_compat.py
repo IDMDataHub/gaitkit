@@ -16,6 +16,20 @@ from ._core import _dicts_to_angle_frames, detect, list_methods
 
 
 def _normalize_units(units: Mapping[str, str] | None) -> Dict[str, str]:
+    """Validate and normalize unit hints.
+
+    Parameters
+    ----------
+    units:
+        Optional mapping with keys ``position`` and/or ``angles``.
+        Allowed values are ``mm``/``m`` for positions and ``deg``/``rad``
+        for angles.
+
+    Returns
+    -------
+    dict
+        Normalized mapping including both keys.
+    """
     if units is None:
         return {"position": "mm", "angles": "deg"}
     if not isinstance(units, Mapping):
@@ -102,7 +116,7 @@ def build_angle_frames(
 
 
 def _normalize_myogait_angle_frame(frame: Mapping[str, Any], index: int) -> Dict[str, Any]:
-    """Map a MyoGait angle frame to gaitkit canonical angle keys."""
+    """Map one MyoGait frame to gaitkit canonical angle fields."""
     out: Dict[str, Any] = {
         "frame_index": int(frame.get("frame_idx", index)),
         "trunk_angle": frame.get("trunk_angle"),
@@ -124,7 +138,13 @@ def _extract_frames_and_fps(
     frames: Sequence[Any] | Mapping[str, Any] | str | Path,
     fps: float,
 ) -> Tuple[Sequence[Any], float]:
-    """Accept raw frame sequences or MyoGait JSON payload/path."""
+    """Resolve input frames from raw frames, MyoGait payload, or JSON path.
+
+    Supported inputs are:
+    - list/sequence of frame dictionaries,
+    - mapping payload with ``angles.frames`` (MyoGait style),
+    - path to a ``.json`` file containing such a payload.
+    """
     # Path to JSON payload
     if isinstance(frames, (str, Path)):
         p = Path(frames)
@@ -164,6 +184,7 @@ def _cycles_from_events(
     right_to: Sequence[Dict[str, Any]],
     fps: float,
 ) -> List[Dict[str, Any]]:
+    """Build simple gait cycles from HS/TO events."""
     cycles: List[Dict[str, Any]] = []
     cycle_id = 0
     for side, hs_list, to_list in (
@@ -202,6 +223,20 @@ def detect_events_structured(
     units: Mapping[str, str] | None = None,
 ) -> Dict[str, Any]:
     """Legacy structured detection API.
+
+    Parameters
+    ----------
+    method:
+        Detection method name (e.g. ``"bike"``).
+    frames:
+        One of:
+        - sequence of frame dictionaries / AngleFrame-like objects,
+        - MyoGait payload mapping with ``angles.frames``,
+        - path to a MyoGait ``.json`` file.
+    fps:
+        Sampling rate in Hz. Used as fallback when no ``meta.fps`` is present.
+    units:
+        Optional unit hints for structured frames.
 
     Returns a plain dictionary designed for easy JSON serialisation.
     """
@@ -276,7 +311,12 @@ def export_detection(
     output_prefix: str | Path,
     formats: Iterable[str] = ("json",),
 ) -> Dict[str, str]:
-    """Export legacy structured payload to JSON/CSV/XLSX/MyoGait events JSON."""
+    """Export structured detection payload to one or multiple formats.
+
+    Supported formats are ``json``, ``csv``, ``xlsx``, and ``myogait``.
+    The ``myogait`` export writes only the events block, compatible with
+    MyoGait-like consumers.
+    """
     if not isinstance(payload, Mapping):
         raise ValueError("payload must be a mapping")
 
