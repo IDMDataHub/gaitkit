@@ -41,9 +41,15 @@ test_that("gk_detect forwards C3D angle options to backend", {
   env <- environment(gk_detect)
   old_mod <- get(".gk_module", envir = env)
   old_wrap <- get(".wrap_result", envir = env)
+  mod_locked <- bindingIsLocked(".gk_module", env)
+  wrap_locked <- bindingIsLocked(".wrap_result", env)
+  if (mod_locked) unlockBinding(".gk_module", env)
+  if (wrap_locked) unlockBinding(".wrap_result", env)
   on.exit({
     assign(".gk_module", old_mod, envir = env)
     assign(".wrap_result", old_wrap, envir = env)
+    if (mod_locked) lockBinding(".gk_module", env)
+    if (wrap_locked) lockBinding(".wrap_result", env)
   }, add = TRUE)
 
   assign(".gk_module", function() {
