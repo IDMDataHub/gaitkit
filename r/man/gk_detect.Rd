@@ -12,9 +12,11 @@ gk_detect(
 )
 }
 \arguments{
-  \item{data}{Input data. Either a named list that includes at least
-  \code{angle_frames} or \code{fps} (for example from \code{gk_load_example()}),
-  or a non-empty file path to a C3D file.}
+  \item{data}{Input data. One of:
+  a named list with \code{angle_frames} and optional \code{fps}
+  (for example from \code{gk_load_example()}),
+  a proprietary MyoGait-like payload list with \code{angles$frames},
+  a C3D file path, or a proprietary JSON payload file path.}
 
   \item{method}{Non-empty character scalar method name (leading/trailing
   whitespace is ignored).

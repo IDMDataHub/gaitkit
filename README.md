@@ -169,6 +169,12 @@ library(gaitkit)
 trial <- gk_load_example("healthy")
 events <- gk_detect(trial, method = "bike")
 events$left_hs
+
+# Proprietary JSON input is also supported
+events2 <- gk_detect("myogait_output_no_events.json", method = "bike")
+
+# Export to MyoGait-compatible events JSON
+gk_export_detection(events2, tempfile("gaitkit_out"), formats = c("json", "myogait"))
 ```
 
 ---

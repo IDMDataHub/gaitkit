@@ -6,8 +6,9 @@ gk_detect_ensemble(data, methods = NULL, min_votes = 2L, tolerance_ms = 50, fps 
 }
 \arguments{
   \item{data}{Input data, same contract as \code{gk_detect()}:
-  a non-empty path string or a list containing at least
-  \code{angle_frames} or \code{fps}.}
+  a non-empty path string (C3D or proprietary JSON) or a list containing
+  either \code{angle_frames}/\code{fps} or a proprietary
+  \code{angles$frames} payload.}
 
   \item{methods}{Optional character vector of methods to include in the vote.
   When provided, must contain at least two unique non-empty method names.}

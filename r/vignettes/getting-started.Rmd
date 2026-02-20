@@ -36,6 +36,12 @@ result <- gk_detect(trial)
 print(result)
 ```
 
+Proprietary JSON payloads with `angles.frames` are accepted directly:
+
+```r
+# result_json <- gk_detect("myogait_output_no_events.json", method = "bike")
+```
+
 ## Available methods
 
 ```r
@@ -79,6 +85,17 @@ result$cycles
 # Individual event lists
 result$left_hs
 result$right_to
+```
+
+## Exporting results
+
+```r
+paths <- gk_export_detection(
+  result,
+  tempfile("gaitkit_out"),
+  formats = c("json", "myogait")
+)
+print(paths)
 ```
 
 ## Example datasets

@@ -55,6 +55,19 @@ res <- gk_detect(trial, method = "bike")
 print(res)
 ```
 
+Proprietary JSON input (`angles.frames`) is also supported:
+
+```r
+res <- gk_detect("myogait_output_no_events.json", method = "bike")
+```
+
+Export to standard files or a MyoGait-compatible events JSON:
+
+```r
+paths <- gk_export_detection(res, tempfile("gaitkit_out"), formats = c("json", "myogait"))
+print(paths)
+```
+
 If R cannot find the Python module, set the interpreter first:
 
 ```r

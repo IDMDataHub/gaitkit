@@ -16,8 +16,14 @@ gk_methods <- function() {
 #'
 #' Run a gait event detector on motion capture data.
 #'
-#' @param data Input data. A named list with \code{angle_frames} and \code{fps}
-#'   (as returned by \code{gk_load_example}), or a path to a C3D file.
+#' @param data Input data. One of:
+#'   \itemize{
+#'   \item a named list with \code{angle_frames} and optional \code{fps}
+#'   (as returned by \code{gk_load_example}),
+#'   \item a proprietary MyoGait-like payload list with \code{angles$frames},
+#'   \item a file path to a C3D file,
+#'   \item a file path to a proprietary JSON payload.
+#'   }
 #' @param method Character, detection method (default \code{"bike"}).
 #'   See \code{gk_methods()} for all options.
 #' @param fps Numeric, sampling frequency in Hz. Required unless \code{data}
@@ -84,17 +90,12 @@ gk_detect <- function(
     stop("'require_core_markers' must be TRUE or FALSE", call. = FALSE)
   }
 
-  if (is.character(data) && length(data) == 1L && nzchar(trimws(data))) {
-    py_data <- data
-  } else if (is.list(data)) {
-    if (!("angle_frames" %in% names(data)) && !("fps" %in% names(data))) {
-      stop(
-        "'data' list should contain at least 'angle_frames' or 'fps' fields",
-        call. = FALSE
-      )
-    }
+  norm_data <- .normalize_input_data(data, fps = fps)
+  if (is.character(norm_data) && length(norm_data) == 1L && nzchar(trimws(norm_data))) {
+    py_data <- norm_data
+  } else if (is.list(norm_data)) {
     py_json <- reticulate::import("json", convert = FALSE)
-    data_json <- jsonlite::toJSON(data, auto_unbox = TRUE, null = "null",
+    data_json <- jsonlite::toJSON(norm_data, auto_unbox = TRUE, null = "null",
                                   digits = 6)
     py_data <- py_json$loads(data_json)
   } else {
@@ -119,7 +120,7 @@ gk_detect <- function(
 #' Run multiple detectors and combine results via temporal clustering
 #' and majority vote.
 #'
-#' @param data Input data (same as \code{gk_detect}).
+#' @param data Input data (same contract as \code{gk_detect}).
 #' @param methods Character vector of methods. Default: all training-free methods.
 #' @param min_votes Integer, minimum number of agreeing methods (default 2).
 #' @param tolerance_ms Numeric, temporal tolerance for matching in ms (default 50).
@@ -159,17 +160,12 @@ gk_detect_ensemble <- function(data, methods = NULL, min_votes = 2L,
     }
   }
 
-  if (is.character(data) && length(data) == 1L && nzchar(trimws(data))) {
-    py_data <- data
-  } else if (is.list(data)) {
-    if (!("angle_frames" %in% names(data)) && !("fps" %in% names(data))) {
-      stop(
-        "'data' list should contain at least 'angle_frames' or 'fps' fields",
-        call. = FALSE
-      )
-    }
+  norm_data <- .normalize_input_data(data, fps = fps)
+  if (is.character(norm_data) && length(norm_data) == 1L && nzchar(trimws(norm_data))) {
+    py_data <- norm_data
+  } else if (is.list(norm_data)) {
     py_json <- reticulate::import("json", convert = FALSE)
-    data_json <- jsonlite::toJSON(data, auto_unbox = TRUE, null = "null",
+    data_json <- jsonlite::toJSON(norm_data, auto_unbox = TRUE, null = "null",
                                   digits = 6)
     py_data <- py_json$loads(data_json)
   } else {
@@ -185,6 +181,54 @@ gk_detect_ensemble <- function(data, methods = NULL, min_votes = 2L,
 
   py_result <- do.call(gk$detect_ensemble, kwargs)
   .wrap_result(py_result)
+}
+
+#' Export Detection Results to Files
+#'
+#' Export a \code{gaitkit_result} (or a structured payload) to one or more
+#' files using the Python compatibility exporter.
+#'
+#' @param result A \code{gaitkit_result} object returned by \code{gk_detect()}
+#'   / \code{gk_detect_ensemble()}, or a structured payload list with
+#'   \code{meta}, \code{heel_strikes}, \code{toe_offs}, and \code{cycles}.
+#' @param output_prefix Character scalar path prefix for output files.
+#' @param formats Character vector of formats. Supported:
+#'   \code{"json"}, \code{"csv"}, \code{"xlsx"}, \code{"myogait"}.
+#'
+#' @return Named character vector with written file paths.
+#'
+#' @examples
+#' \donttest{
+#' trial <- gk_load_example("healthy")
+#' res <- gk_detect(trial, method = "bike")
+#' gk_export_detection(res, tempfile("gaitkit_out"), formats = c("json", "myogait"))
+#' }
+#'
+#' @export
+gk_export_detection <- function(result, output_prefix, formats = "json") {
+  if (!is.character(output_prefix) || length(output_prefix) != 1L || !nzchar(trimws(output_prefix))) {
+    stop("'output_prefix' must be a non-empty character scalar", call. = FALSE)
+  }
+  if (!is.character(formats) || length(formats) < 1L) {
+    stop("'formats' must be a non-empty character vector", call. = FALSE)
+  }
+  formats <- unique(tolower(trimws(formats)))
+  if (any(!nzchar(formats))) {
+    stop("'formats' cannot contain empty entries", call. = FALSE)
+  }
+
+  payload <- .coerce_export_payload(result)
+  py_json <- reticulate::import("json", convert = FALSE)
+  payload_json <- jsonlite::toJSON(payload, auto_unbox = TRUE, null = "null", digits = 6)
+  py_payload <- py_json$loads(payload_json)
+
+  gk <- .gk_module()
+  py_paths <- gk$export_detection(
+    py_payload,
+    output_prefix = output_prefix,
+    formats = as.list(formats)
+  )
+  reticulate::py_to_r(py_paths)
 }
 
 #' Load a Bundled Example Trial
@@ -222,6 +266,156 @@ gk_list_examples <- function() {
 }
 
 # ── Internal helpers ────────────────────────────────────────────────
+
+`%||%` <- function(x, y) {
+  if (is.null(x) || (length(x) == 1L && is.na(x))) y else x
+}
+
+.is_myogait_payload <- function(x) {
+  is.list(x) &&
+    ("angles" %in% names(x)) &&
+    is.list(x$angles) &&
+    ("frames" %in% names(x$angles)) &&
+    is.list(x$angles$frames)
+}
+
+.normalize_myogait_frame <- function(frame, i) {
+  if (!is.list(frame)) return(NULL)
+  out <- list(
+    frame_index = as.integer(frame$frame_idx %||% (i - 1L)),
+    trunk_angle = frame$trunk_angle,
+    pelvis_tilt = frame$pelvis_tilt,
+    left_hip_angle = frame$hip_L,
+    right_hip_angle = frame$hip_R,
+    left_knee_angle = frame$knee_L,
+    right_knee_angle = frame$knee_R,
+    left_ankle_angle = frame$ankle_L,
+    right_ankle_angle = frame$ankle_R
+  )
+  if (!is.null(frame$landmark_positions) && is.list(frame$landmark_positions)) {
+    out$landmark_positions <- frame$landmark_positions
+  }
+  out
+}
+
+.myogait_to_trial <- function(payload, fps = NULL) {
+  frames <- payload$angles$frames
+  norm_frames <- Filter(
+    Negate(is.null),
+    lapply(seq_along(frames), function(i) .normalize_myogait_frame(frames[[i]], i))
+  )
+  resolved_fps <- NULL
+  if (!is.null(payload$meta) && is.list(payload$meta) && !is.null(payload$meta$fps)) {
+    resolved_fps <- suppressWarnings(as.numeric(payload$meta$fps))
+  }
+  if (is.null(resolved_fps) || is.na(resolved_fps) || resolved_fps <= 0) {
+    if (!is.null(fps)) {
+      resolved_fps <- as.numeric(fps)
+    } else {
+      resolved_fps <- NULL
+    }
+  }
+
+  trial <- list(angle_frames = norm_frames)
+  if (!is.null(resolved_fps) && !is.na(resolved_fps) && resolved_fps > 0) {
+    trial$fps <- resolved_fps
+  }
+  trial
+}
+
+.normalize_input_data <- function(data, fps = NULL) {
+  if (is.character(data) && length(data) == 1L) {
+    data <- trimws(data)
+    if (!nzchar(data)) {
+      stop("'data' must be a list or a file path", call. = FALSE)
+    }
+    if (grepl("\\.json$", data, ignore.case = TRUE)) {
+      if (!file.exists(data)) {
+        stop("JSON input file does not exist: ", data, call. = FALSE)
+      }
+      payload <- jsonlite::fromJSON(data, simplifyVector = FALSE)
+      if (!.is_myogait_payload(payload)) {
+        stop("Unsupported JSON input: expected a payload with angles.frames", call. = FALSE)
+      }
+      return(.myogait_to_trial(payload, fps = fps))
+    }
+    return(data)
+  }
+
+  if (!is.list(data)) {
+    stop("'data' must be a list or a file path", call. = FALSE)
+  }
+  if ("angle_frames" %in% names(data) || "fps" %in% names(data)) {
+    return(data)
+  }
+  if (.is_myogait_payload(data)) {
+    return(.myogait_to_trial(data, fps = fps))
+  }
+  stop(
+    "'data' list should contain at least 'angle_frames' or 'fps' fields",
+    call. = FALSE
+  )
+}
+
+.coerce_export_payload <- function(x) {
+  if (!is.list(x)) {
+    stop("'result' must be a gaitkit_result or a structured payload list", call. = FALSE)
+  }
+  if (all(c("meta", "heel_strikes", "toe_offs", "cycles") %in% names(x))) {
+    return(x)
+  }
+  if (!inherits(x, "gaitkit_result")) {
+    stop("'result' must be a gaitkit_result or a structured payload list", call. = FALSE)
+  }
+
+  hs_rows <- data.frame()
+  if (is.list(x$left_hs) && length(x$left_hs) > 0) {
+    hs_rows <- rbind(hs_rows, .events_list_to_rows(x$left_hs, "left"))
+  }
+  if (is.list(x$right_hs) && length(x$right_hs) > 0) {
+    hs_rows <- rbind(hs_rows, .events_list_to_rows(x$right_hs, "right"))
+  }
+
+  to_rows <- data.frame()
+  if (is.list(x$left_to) && length(x$left_to) > 0) {
+    to_rows <- rbind(to_rows, .events_list_to_rows(x$left_to, "left"))
+  }
+  if (is.list(x$right_to) && length(x$right_to) > 0) {
+    to_rows <- rbind(to_rows, .events_list_to_rows(x$right_to, "right"))
+  }
+
+  list(
+    meta = list(
+      detector = x$method %||% NA_character_,
+      fps_hz = x$fps %||% NA_real_,
+      n_frames = x$n_frames %||% NA_integer_
+    ),
+    heel_strikes = .rows_to_payload_list(hs_rows),
+    toe_offs = .rows_to_payload_list(to_rows),
+    cycles = if (is.data.frame(x$cycles)) .rows_to_payload_list(x$cycles) else list()
+  )
+}
+
+.events_list_to_rows <- function(events, side) {
+  do.call(rbind, lapply(events, function(ev) {
+    data.frame(
+      frame_index = as.integer(ev$frame %||% ev$frame_index %||% NA_integer_),
+      time_s = as.numeric(ev$time %||% ev$time_s %||% NA_real_),
+      side = as.character(side),
+      confidence = as.numeric(ev$confidence %||% 1.0)
+    )
+  }))
+}
+
+.rows_to_payload_list <- function(df) {
+  if (!is.data.frame(df) || nrow(df) == 0) return(list())
+  rows <- vector("list", nrow(df))
+  for (i in seq_len(nrow(df))) {
+    row <- as.list(df[i, , drop = FALSE])
+    rows[[i]] <- lapply(row, function(v) if (length(v) == 1L) v[[1]] else v)
+  }
+  rows
+}
 
 .gk_module <- function() {
   if (!requireNamespace("reticulate", quietly = TRUE)) {

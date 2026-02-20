@@ -128,3 +128,69 @@ test_that("gk_load_example validates name before Python bridge", {
     "'name' must be a non-empty character scalar"
   )
 })
+
+test_that("proprietary payload is normalized to angle_frames trial", {
+  payload <- list(
+    meta = list(fps = 120),
+    angles = list(
+      frames = list(
+        list(frame_idx = 10, hip_L = 1, knee_L = 2, ankle_L = 3),
+        list(frame_idx = 11, hip_R = 4, knee_R = 5, ankle_R = 6)
+      )
+    )
+  )
+  out <- .normalize_input_data(payload, fps = NULL)
+  expect_true(is.list(out))
+  expect_true("angle_frames" %in% names(out))
+  expect_true("fps" %in% names(out))
+  expect_equal(out$fps, 120)
+  expect_equal(out$angle_frames[[1]]$frame_index, 10)
+  expect_equal(out$angle_frames[[1]]$left_hip_angle, 1)
+  expect_equal(out$angle_frames[[2]]$right_knee_angle, 5)
+})
+
+test_that("proprietary JSON file path is supported and validated", {
+  tf <- tempfile(fileext = ".json")
+  payload <- list(
+    meta = list(fps = 100),
+    angles = list(
+      frames = list(
+        list(frame_idx = 0, hip_L = 1, knee_L = 2, ankle_L = 3)
+      )
+    )
+  )
+  jsonlite::write_json(payload, tf, auto_unbox = TRUE, pretty = TRUE)
+  out <- .normalize_input_data(tf, fps = NULL)
+  expect_true(is.list(out))
+  expect_true("angle_frames" %in% names(out))
+  expect_equal(out$fps, 100)
+
+  bad <- tempfile(fileext = ".json")
+  jsonlite::write_json(list(foo = 1), bad, auto_unbox = TRUE, pretty = TRUE)
+  expect_error(
+    .normalize_input_data(bad, fps = NULL),
+    "Unsupported JSON input: expected a payload with angles.frames"
+  )
+})
+
+test_that("gk_export_detection payload coercion accepts gaitkit_result", {
+  x <- list(
+    left_hs = list(list(frame = 10, time = 0.1, confidence = 0.9)),
+    right_hs = list(),
+    left_to = list(),
+    right_to = list(list(frame = 20, time = 0.2, confidence = 0.8)),
+    cycles = data.frame(
+      cycle_id = 0L, side = "left", start_frame = 10L, toe_off_frame = 20L,
+      end_frame = 30L, duration = 0.2, stance_percentage = 60
+    ),
+    method = "bike",
+    fps = 100,
+    n_frames = 1000L
+  )
+  class(x) <- "gaitkit_result"
+  payload <- .coerce_export_payload(x)
+  expect_true(all(c("meta", "heel_strikes", "toe_offs", "cycles") %in% names(payload)))
+  expect_equal(payload$meta$detector, "bike")
+  expect_equal(payload$heel_strikes[[1]]$frame_index, 10)
+  expect_equal(payload$toe_offs[[1]]$frame_index, 20)
+})
