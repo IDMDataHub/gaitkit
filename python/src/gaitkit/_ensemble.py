@@ -28,6 +28,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 import numpy as np
 
 from .detectors import DETECTOR_REGISTRY, get_detector
+from ._core import _normalize_input
 
 logger = logging.getLogger(__name__)
 
@@ -484,6 +485,12 @@ def detect_ensemble(
         )
 
     tolerance_frames = max(1, int(round(tolerance_ms * fps / 1000.0)))
+
+    # ---- Normalize input (dict → AngleFrame objects) -----------------------
+    # Detectors expect AngleFrame objects with .landmark_positions attribute,
+    # not raw dicts.  _normalize_input handles all input formats (C3D path,
+    # dict with "angle_frames" key, list of dicts, ExtractionResult).
+    data, fps = _normalize_input(data, fps)
 
     # ---- Run each detector -------------------------------------------------
     # Collect events per (event_type, side, method)
