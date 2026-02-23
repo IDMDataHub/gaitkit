@@ -23,6 +23,7 @@ from typing import Optional
 from dataclasses import dataclass
 from scipy.signal import savgol_filter
 
+from ..utils.preprocessing import interpolate_nan
 from .axis_utils import detect_axes
 
 
@@ -113,6 +114,9 @@ class MickelboroughDetector:
         right_heel_z = np.array([
             f.landmark_positions.get('right_heel', (0, 0, 0.5))[vax]
             if f.landmark_positions else 0.5 for f in angle_frames])
+
+        left_heel_z = interpolate_nan(left_heel_z)
+        right_heel_z = interpolate_nan(right_heel_z)
 
         if n > self.smooth_window:
             left_heel_z = savgol_filter(left_heel_z, self.smooth_window, 3)

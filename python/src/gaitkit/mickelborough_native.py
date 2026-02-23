@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import numpy as np
 from scipy.signal import savgol_filter
+from gaitkit.utils.preprocessing import interpolate_nan
 
 try:
     from gaitkit.native import _gait_native as _native_solver
@@ -48,6 +49,9 @@ class MickelboroughNativeDetector(MickelboroughDetector):
                 for f in angle_frames
             ]
         )
+
+        left_heel_z = interpolate_nan(left_heel_z)
+        right_heel_z = interpolate_nan(right_heel_z)
 
         if n > self.smooth_window:
             left_heel_z = savgol_filter(left_heel_z, self.smooth_window, 3)

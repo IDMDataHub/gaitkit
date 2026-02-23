@@ -21,6 +21,7 @@ from typing import List, Tuple, Optional
 from dataclasses import dataclass
 from scipy.signal import find_peaks, savgol_filter
 
+from ..utils.preprocessing import interpolate_nan
 from .axis_utils import detect_axes
 
 @dataclass
@@ -154,6 +155,11 @@ class OConnorDetector:
             (f.landmark_positions.get('right_toe', None) or
              f.landmark_positions.get('right_foot_index', (0, 0, 0.5)))[vax]
             if f.landmark_positions else 0.5 for f in angle_frames])
+
+        left_heel_z = interpolate_nan(left_heel_z)
+        right_heel_z = interpolate_nan(right_heel_z)
+        left_toe_z = interpolate_nan(left_toe_z)
+        right_toe_z = interpolate_nan(right_toe_z)
 
         if n > self.smooth_window:
             left_heel_z = savgol_filter(left_heel_z, self.smooth_window, 3)

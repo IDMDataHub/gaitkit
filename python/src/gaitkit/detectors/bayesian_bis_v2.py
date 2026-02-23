@@ -23,6 +23,7 @@ from scipy.signal import savgol_filter, find_peaks
 from scipy.ndimage import gaussian_filter1d
 import logging
 
+from ..utils.preprocessing import interpolate_nan
 from .axis_utils import detect_axes, detect_walking_direction
 
 logger = logging.getLogger(__name__)
@@ -242,6 +243,10 @@ class BayesianBisV2GaitDetector:
         rk = np.array([f.landmark_positions["right_knee"][ap] if f.landmark_positions else 0.5 for f in af])
         la = np.array([f.landmark_positions["left_ankle"][ap] if f.landmark_positions else 0.5 for f in af])
         ra = np.array([f.landmark_positions["right_ankle"][ap] if f.landmark_positions else 0.5 for f in af])
+        lk = interpolate_nan(lk)
+        rk = interpolate_nan(rk)
+        la = interpolate_nan(la)
+        ra = interpolate_nan(ra)
         if n > self.smoothing_window:
             return {"left_knee": savgol_filter(lk, self.smoothing_window, 3),
                     "right_knee": savgol_filter(rk, self.smoothing_window, 3),
@@ -516,6 +521,16 @@ class BayesianBisV2GaitDetector:
                 else:
                     knee_angle[i] = f.right_knee_angle
                     ankle_angle[i] = f.right_ankle_angle
+
+            # --- Interpolate NaNs before filtering ---
+            knee_ap = interpolate_nan(knee_ap)
+            heel_ap = interpolate_nan(heel_ap)
+            ankle_ap = interpolate_nan(ankle_ap)
+            heel_z = interpolate_nan(heel_z)
+            toe_z = interpolate_nan(toe_z)
+            ankle_z = interpolate_nan(ankle_z)
+            knee_angle = interpolate_nan(knee_angle)
+            ankle_angle = interpolate_nan(ankle_angle)
 
             # --- V1 features (unchanged) ---
             if has_heel:

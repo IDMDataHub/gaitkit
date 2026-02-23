@@ -57,6 +57,9 @@ class BayesianBisNativeGaitDetector(BayesianBisGaitDetector):
                 la[i] = 0.5
                 ra[i] = 0.5
 
+        # Interpolate NaN gaps (lost markers) before filtering
+        from gaitkit.utils.preprocessing import interpolate_nan
+        lk, rk, la, ra = interpolate_nan(lk), interpolate_nan(rk), interpolate_nan(la), interpolate_nan(ra)
         if n > self.smoothing_window:
             return {
                 "left_knee": savgol_filter(lk, self.smoothing_window, 3),

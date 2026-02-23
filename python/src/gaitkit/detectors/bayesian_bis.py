@@ -234,6 +234,9 @@ class BayesianBisGaitDetector:
         rk = np.array([f.landmark_positions["right_knee"][ap] if f.landmark_positions else 0.5 for f in af])
         la = np.array([f.landmark_positions["left_ankle"][ap] if f.landmark_positions else 0.5 for f in af])
         ra = np.array([f.landmark_positions["right_ankle"][ap] if f.landmark_positions else 0.5 for f in af])
+        # Interpolate NaN gaps (lost markers) before filtering
+        from ..utils.preprocessing import interpolate_nan
+        lk, rk, la, ra = interpolate_nan(lk), interpolate_nan(rk), interpolate_nan(la), interpolate_nan(ra)
         if n > self.smoothing_window:
             return {"left_knee": savgol_filter(lk, self.smoothing_window, 3),
                     "right_knee": savgol_filter(rk, self.smoothing_window, 3),

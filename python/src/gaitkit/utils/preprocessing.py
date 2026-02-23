@@ -12,6 +12,38 @@ from scipy.fft import fft, fftfreq
 from typing import Tuple
 
 
+def interpolate_nan(signal: np.ndarray) -> np.ndarray:
+    """Linearly interpolate NaN values in a 1-D signal.
+
+    Edge NaNs are filled with the nearest valid value (forward/backward fill).
+    Returns a copy; the original array is not modified.
+    If the signal is all-NaN, returns zeros.
+
+    Parameters
+    ----------
+    signal : ndarray, shape (N,)
+        Input signal possibly containing NaN values.
+
+    Returns
+    -------
+    ndarray, shape (N,)
+        Signal with NaN gaps filled by linear interpolation.
+    """
+    out = signal.copy()
+    nans = np.isnan(out)
+    if not nans.any():
+        return out
+    if nans.all():
+        return np.zeros_like(out)
+    valid = ~nans
+    out[nans] = np.interp(
+        np.flatnonzero(nans),
+        np.flatnonzero(valid),
+        out[valid],
+    )
+    return out
+
+
 def lowpass_butterworth(signal: np.ndarray, cutoff: float, fps: float,
                         order: int = 4) -> np.ndarray:
     """Apply a zero-phase Butterworth low-pass filter.

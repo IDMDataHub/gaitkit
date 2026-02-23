@@ -7,6 +7,7 @@ from __future__ import annotations
 import os
 import numpy as np
 from scipy.signal import find_peaks, savgol_filter
+from gaitkit.utils.preprocessing import interpolate_nan
 
 try:
     from gaitkit.native import _gait_native as _native_solver
@@ -75,6 +76,11 @@ class HreljacNativeDetector(HreljacDetector):
                 for f in angle_frames
             ]
         )
+
+        left_heel_z = interpolate_nan(left_heel_z)
+        right_heel_z = interpolate_nan(right_heel_z)
+        left_toe_z = interpolate_nan(left_toe_z)
+        right_toe_z = interpolate_nan(right_toe_z)
 
         if n > self.smooth_window:
             left_heel_z = savgol_filter(left_heel_z, self.smooth_window, 3)

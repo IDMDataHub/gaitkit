@@ -7,6 +7,7 @@ from __future__ import annotations
 import numpy as np
 from scipy.signal import savgol_filter
 from scipy.ndimage import gaussian_filter1d
+from gaitkit.utils.preprocessing import interpolate_nan
 
 try:
     from gaitkit.native import _gait_native as _native_solver
@@ -69,6 +70,11 @@ class GhoussayniNativeDetector(GhoussayniDetector):
 
         if np.std(left_heel_z) < 0.001 or np.std(right_heel_z) < 0.001:
             return [], [], []
+
+        left_heel_z = interpolate_nan(left_heel_z)
+        right_heel_z = interpolate_nan(right_heel_z)
+        left_toe_z = interpolate_nan(left_toe_z)
+        right_toe_z = interpolate_nan(right_toe_z)
 
         if n > self.smooth_window:
             left_heel_z = savgol_filter(left_heel_z, self.smooth_window, 3)
