@@ -175,7 +175,17 @@ def compare_plot(
         axes = [axes]
 
     for ax, method in zip(axes, methods):
-        result = detect(data, method=method, fps=fps)
+        try:
+            result = detect(data, method=method, fps=fps)
+        except Exception as exc:
+            ax.set_ylabel(method, fontsize=10, fontweight="bold")
+            ax.text(0.5, 0.5, f"FAILED: {exc}",
+                    transform=ax.transAxes, ha="center", va="center",
+                    fontsize=9, color="red", wrap=True)
+            ax.spines["top"].set_visible(False)
+            ax.spines["right"].set_visible(False)
+            continue
+
         # Plot a simple knee angle if available
         af = result._angle_frames
         t = np.arange(result.n_frames) / result.fps
