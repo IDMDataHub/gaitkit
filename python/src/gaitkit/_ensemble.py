@@ -160,6 +160,35 @@ class GaitResult:
         """Return toe-off frame indices."""
         return [_event_frame(e) for e in self.to(side)]
 
+    # -- Compatibility with _core.GaitResult (left_hs/right_hs/left_to/right_to)
+
+    @property
+    def left_hs(self) -> list:
+        """Left heel-strike events (compatibility with _core.GaitResult)."""
+        return self.hs("left")
+
+    @property
+    def right_hs(self) -> list:
+        """Right heel-strike events (compatibility with _core.GaitResult)."""
+        return self.hs("right")
+
+    @property
+    def left_to(self) -> list:
+        """Left toe-off events (compatibility with _core.GaitResult)."""
+        return self.to("left")
+
+    @property
+    def right_to(self) -> list:
+        """Right toe-off events (compatibility with _core.GaitResult)."""
+        return self.to("right")
+
+    @property
+    def n_frames(self) -> int:
+        """Number of frames in the input data."""
+        if self._angle_frames is not None:
+            return len(self._angle_frames)
+        return 0
+
     def summary(self) -> Dict[str, Any]:
         """Return a concise summary dictionary."""
         return {

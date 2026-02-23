@@ -74,6 +74,42 @@ class GaitResult:
     n_frames: int = 0
     _angle_frames: Optional[list] = field(default=None, repr=False)
 
+    # ── unified accessors (compatible with _ensemble.GaitResult) ──
+
+    def hs(self, side: Optional[str] = None) -> list:
+        """Return heel-strike events, optionally filtered by side."""
+        if side == "left":
+            return list(self.left_hs)
+        if side == "right":
+            return list(self.right_hs)
+        return sorted(self.left_hs + self.right_hs, key=lambda e: e["frame"])
+
+    def to(self, side: Optional[str] = None) -> list:
+        """Return toe-off events, optionally filtered by side."""
+        if side == "left":
+            return list(self.left_to)
+        if side == "right":
+            return list(self.right_to)
+        return sorted(self.left_to + self.right_to, key=lambda e: e["frame"])
+
+    def hs_frames(self, side: Optional[str] = None) -> List[int]:
+        """Return heel-strike frame indices."""
+        return [e["frame"] for e in self.hs(side)]
+
+    def to_frames(self, side: Optional[str] = None) -> List[int]:
+        """Return toe-off frame indices."""
+        return [e["frame"] for e in self.to(side)]
+
+    @property
+    def heel_strikes(self) -> list:
+        """All heel-strike events (both sides)."""
+        return self.hs()
+
+    @property
+    def toe_offs(self) -> list:
+        """All toe-off events (both sides)."""
+        return self.to()
+
     # ── convenience properties ────────────────────────────────────
 
     @property
