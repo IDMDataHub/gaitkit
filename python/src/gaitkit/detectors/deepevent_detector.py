@@ -211,7 +211,9 @@ def _resolve_cache_dir() -> Path:
 _CACHE_DIR = _resolve_cache_dir()
 _DEFAULT_WEIGHT_PATH = _CACHE_DIR / "DeepEventWeight.h5"
 _WEIGHTS_URLS = [
-    "https://raw.githubusercontent.com/IDMDataHub/gaitkit/master/assets/DeepEventWeight.h5",
+    # Use media.githubusercontent.com to resolve Git LFS pointers
+    # (raw.githubusercontent.com returns the 134-byte LFS pointer text).
+    "https://media.githubusercontent.com/media/IDMDataHub/gaitkit/master/assets/DeepEventWeight.h5",
 ]
 
 
