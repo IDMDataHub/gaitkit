@@ -867,10 +867,12 @@ class BayesianBisGaitDetector:
         ap = self._ap_axis
         direction = self._direction
         px = np.array([(f.landmark_positions.get("left_hip", (0.5,0,0))[ap] +
-                        f.landmark_positions.get("right_hip", (0.5,0,0))[ap]) / 2 for f in af])
+                        f.landmark_positions.get("right_hip", (0.5,0,0))[ap]) / 2
+                       if f.landmark_positions else 0.5 for f in af])
         zs, zv = {}, {}
         for side in ["left", "right"]:
-            ax = np.array([f.landmark_positions.get(f"{side}_ankle", (0.5,0,0))[ap] for f in af])
+            ax = np.array([f.landmark_positions.get(f"{side}_ankle", (0.5,0,0))[ap]
+                           if f.landmark_positions else 0.5 for f in af])
             rel = ax - px
             if direction < 0:
                 rel = -rel
@@ -888,13 +890,15 @@ class BayesianBisGaitDetector:
         if has_heel and event_type == "hs":
             _, vert = detect_axes(af)
             for side in ["left", "right"]:
-                hz = np.array([f.landmark_positions.get(f"{side}_heel", (0,0,0))[vert] for f in af])
+                hz = np.array([f.landmark_positions.get(f"{side}_heel", (0,0,0))[vert]
+                              if f.landmark_positions else 0.0 for f in af])
                 if np.ptp(hz) > self.VERTICAL_RANGE_THRESHOLD:
                     heel_z_smooth[side] = gaussian_filter1d(hz, 1.0)
         if has_toe and event_type == "to":
             _, vert = detect_axes(af)
             for side in ["left", "right"]:
-                tz = np.array([f.landmark_positions.get(f"{side}_toe", (0,0,0))[vert] for f in af])
+                tz = np.array([f.landmark_positions.get(f"{side}_toe", (0,0,0))[vert]
+                              if f.landmark_positions else 0.0 for f in af])
                 if np.ptp(tz) > self.VERTICAL_RANGE_THRESHOLD:
                     toe_z_smooth[side] = gaussian_filter1d(tz, 1.0)
         max_vert_correction = max(self.VERTICAL_CORRECTION_MIN_SHIFT,
@@ -1089,9 +1093,12 @@ class BayesianBisGaitDetector:
         ap = getattr(self, '_ap_axis', 0)
         direction = getattr(self, '_direction', 1)
         px = np.array([(f.landmark_positions.get('left_hip', (0.5,0,0))[ap] +
-                        f.landmark_positions.get('right_hip', (0.5,0,0))[ap]) / 2 for f in af])
-        lar = np.array([f.landmark_positions.get('left_ankle', (0.5,0,0))[ap] - px[i] for i, f in enumerate(af)])
-        rar = np.array([f.landmark_positions.get('right_ankle', (0.5,0,0))[ap] - px[i] for i, f in enumerate(af)])
+                        f.landmark_positions.get('right_hip', (0.5,0,0))[ap]) / 2
+                       if f.landmark_positions else 0.5 for f in af])
+        lar = np.array([f.landmark_positions.get('left_ankle', (0.5,0,0))[ap] - px[i]
+                        if f.landmark_positions else 0.0 for i, f in enumerate(af)])
+        rar = np.array([f.landmark_positions.get('right_ankle', (0.5,0,0))[ap] - px[i]
+                        if f.landmark_positions else 0.0 for i, f in enumerate(af)])
         if direction < 0:
             lar, rar = -lar, -rar
         if n > self.smoothing_window:
@@ -1224,7 +1231,7 @@ class BayesianBisGaitDetector:
         toe_z_vel = {}
         for side in ['left', 'right']:
             tz = np.array([f.landmark_positions.get(side + '_toe', (0,0,0))[vert]
-                          for f in af])
+                          if f.landmark_positions else 0.0 for f in af])
             tz_smooth = gaussian_filter1d(tz, sigma_s)
             tz_vel = np.gradient(tz_smooth) * self.fps
             toe_z_vel[side] = tz_vel
