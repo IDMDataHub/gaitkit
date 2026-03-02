@@ -168,6 +168,30 @@ class TestParseEventsFile(unittest.TestCase):
             events = ext._parse_events_file(events_path)
             self.assertEqual(events['hs_left'], [])
 
+    def test_visual3d_fixed_width_format(self):
+        """Parse the real Visual3D export format (space-padded, multi-header)."""
+        content = (
+            "                           P03_WALK_01.c3d      P03_WALK_01.c3d      P03_WALK_01.c3d      P03_WALK_01.c3d      P03_WALK_01.c3d      P03_WALK_01.c3d      P03_WALK_01.c3d      P03_WALK_01.c3d\n"
+            "                                       End                  LHS                 LOFF                  LON                  LTO                  RHS                 ROFF                  RON                  RTO\n"
+            "                               EVENT_LABEL          EVENT_LABEL          EVENT_LABEL          EVENT_LABEL          EVENT_LABEL          EVENT_LABEL          EVENT_LABEL          EVENT_LABEL          EVENT_LABEL\n"
+            "                                  ORIGINAL             ORIGINAL             ORIGINAL             ORIGINAL             ORIGINAL             ORIGINAL             ORIGINAL             ORIGINAL             ORIGINAL\n"
+            "                 ITEM                    X                    X                    X                    X                    X                    X                    X                    X                    X\n"
+            "                    1                  942                  450                  809                  672                  360                  261                  696                  561                  303\n"
+            "                    2                  NaN                  672                  NaN                  NaN                  584                  323                  NaN                  NaN                  472\n"
+            "                    3                  NaN                  895                  NaN                  NaN                  809                  561                  NaN                  NaN                  696\n"
+            "                    4                  NaN                 1070                  NaN                  NaN                 1033                  783                  NaN                  NaN                  920\n"
+            "                    5                  NaN                  NaN                  NaN                  NaN                  NaN                  997                  NaN                  NaN                  NaN\n"
+        )
+        with tempfile.TemporaryDirectory() as td:
+            ext = self._make_extractor(td)
+            events_path = Path(td) / "markers.events.frame"
+            events_path.write_text(content)
+            events = ext._parse_events_file(events_path)
+            self.assertEqual(events['hs_left'], [450, 672, 895, 1070])
+            self.assertEqual(events['hs_right'], [261, 323, 561, 783, 997])
+            self.assertEqual(events['to_left'], [360, 584, 809, 1033])
+            self.assertEqual(events['to_right'], [303, 472, 696, 920])
+
     def test_events_are_sorted(self):
         """Events should be returned sorted regardless of file order."""
         content = textwrap.dedent("""\

@@ -138,13 +138,24 @@ class BioCVExtractor(BaseExtractor):
         return info
 
     def _parse_events_file(self, events_path: Path) -> Dict[str, List[int]]:
-        """Parse markers.events.frame tab-separated format.
+        """Parse markers.events.frame Visual3D export format.
 
-        Format example:
-            Event       LHS   RHS   LTO   RTO   LOFF  ROFF  LON   RON
-            Item 1      450   261   360   303   809   696   672   561
-            Item 2      672   323   584   472   —     —     —     —
-            ...
+        The file uses fixed-width (space-padded) columns with multiple
+        header rows.  The actual layout (from P03_WALK_01) looks like::
+
+            [row 0]  P03_WALK_01.c3d  P03_WALK_01.c3d  ...
+            [row 1]  End  First_Movement  LHS  LOFF  LON  LTO  RHS  ...
+            [row 2]  EVENT_LABEL  EVENT_LABEL  ...
+            [row 3]  ORIGINAL  ORIGINAL  ...
+            [row 4]  ITEM  X  X  X  ...
+            [row 5+] 1  942  NaN  450  809  672  360  261  ...
+
+        Strategy: find the header row containing event type names (LHS,
+        RHS, etc.), split every row by whitespace, then map columns
+        positionally.
+
+        Also handles simpler tab-separated formats (used in unit tests
+        and some trials).
 
         Returns dict with keys hs_left, hs_right, to_left, to_right.
         """
@@ -163,37 +174,93 @@ class BioCVExtractor(BaseExtractor):
         except UnicodeDecodeError:
             text = events_path.read_text(encoding='latin-1')
 
-        lines = [l.strip() for l in text.strip().splitlines() if l.strip()]
+        lines = [l for l in text.splitlines() if l.strip()]
         if len(lines) < 2:
             return events
 
-        # Parse header to find column indices for LHS, RHS, LTO, RTO
-        header = lines[0]
-        columns = header.split('\t')
-        # Normalize: strip whitespace
-        columns = [c.strip() for c in columns]
+        # --- Locate the header row that contains event type names --------
+        EVENT_MAP = {
+            'LHS': 'hs_left',
+            'RHS': 'hs_right',
+            'LTO': 'to_left',
+            'RTO': 'to_right',
+        }
+        header_idx = None
+        header_tokens = []
+        for i, line in enumerate(lines):
+            tokens = line.split()
+            token_set = {t.upper() for t in tokens}
+            # The header row must contain at least LHS or RHS
+            if token_set & {'LHS', 'RHS'}:
+                header_idx = i
+                header_tokens = tokens
+                break
 
+        if header_idx is None:
+            # Fallback: try tab-separated first line (unit-test format)
+            tokens = lines[0].split('\t')
+            tokens = [t.strip() for t in tokens]
+            token_set = {t.upper() for t in tokens}
+            if token_set & {'LHS', 'RHS'}:
+                header_idx = 0
+                header_tokens = tokens
+
+        if header_idx is None:
+            return events
+
+        # --- Build column map: positional index -> event key -------------
         col_map = {}
-        for i, col in enumerate(columns):
-            col_upper = col.upper()
-            if col_upper == 'LHS':
-                col_map[i] = 'hs_left'
-            elif col_upper == 'RHS':
-                col_map[i] = 'hs_right'
-            elif col_upper == 'LTO':
-                col_map[i] = 'to_left'
-            elif col_upper == 'RTO':
-                col_map[i] = 'to_right'
+        for ci, tok in enumerate(header_tokens):
+            key = EVENT_MAP.get(tok.upper().strip())
+            if key:
+                col_map[ci] = key
 
-        # Parse data rows
-        for line in lines[1:]:
-            fields = line.split('\t')
+        if not col_map:
+            return events
+
+        # --- Detect column offset between header and data rows -----------
+        # In the Visual3D fixed-width format, the header row has N tokens
+        # (End, LHS, LOFF, ...) but data rows have N+1 tokens because the
+        # first token is the item number.  Detect this by checking whether
+        # the header's first token is a known non-data label.
+        first_header = header_tokens[0].upper()
+        is_tab_format = '\t' in lines[header_idx]
+        # In the space-padded format, first token is an event name (e.g. "End").
+        # In the tab format, first token is "Event" (column label).
+        # Data rows always start with an item number.
+        # We detect the offset when parsing the first data row below.
+
+        # --- Parse data rows (everything after header metadata) ----------
+        for line in lines[header_idx + 1:]:
+            tokens = line.split() if '\t' not in line else [t.strip() for t in line.split('\t')]
+            if not tokens:
+                continue
+            # Skip non-data rows (EVENT_LABEL, ORIGINAL, ITEM header)
+            first = tokens[0].strip()
+            is_data_row = False
+            data_offset = 0
+            try:
+                int(first)
+                is_data_row = True
+                # Data row starts with item number — offset by 1 if
+                # header row didn't start with a numeric-like column
+                if len(tokens) > len(header_tokens):
+                    data_offset = len(tokens) - len(header_tokens)
+            except ValueError:
+                if first.lower().startswith('item'):
+                    # Tab-separated "Item N val val ..." format
+                    is_data_row = True
+                    data_offset = 0  # "Item" is already col 0 in header too
+
+            if not is_data_row:
+                continue
+
             for col_idx, event_key in col_map.items():
-                if col_idx >= len(fields):
+                actual_idx = col_idx + data_offset
+                if actual_idx >= len(tokens):
                     continue
-                val = fields[col_idx].strip()
-                # Skip NaN, empty, dashes
-                if not val or val.lower() == 'nan' or val in ('—', '-', ''):
+                val = tokens[actual_idx].strip()
+                if not val or val.lower() == 'nan' or val in ('—', '-'):
                     continue
                 try:
                     frame = int(float(val))
