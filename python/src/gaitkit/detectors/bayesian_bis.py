@@ -992,6 +992,8 @@ class BayesianBisGaitDetector:
         T = rm.T1 if rm.T1 > 0 else self.min_crossing_frames * 2
         md = int(T / 4)
         max_boundary_dist = T * 1.5
+        dp_probs = [ev.probability for ev in ve if ev.probability > 0]
+        min_confidence = np.median(dp_probs) * 0.5 if dp_probs else 0.3
         ss, se = 0, fc
         if se > ss + md:
             for side in ["left", "right"]:
@@ -1023,6 +1025,8 @@ class BayesianBisGaitDetector:
                         cs = [max(cs, key=lambda x: pz[x])]
                     for pk in cs:
                         bf = ss + pk
+                        if pz[pk] < min_confidence:
+                            continue
                         if not any(abs(bf - ev.frame_index) < md for ev in ve if ev.side == side):
                             nearest_dp = min(abs(bf - ev.frame_index) for ev in ve)
                             if nearest_dp > max_boundary_dist:
@@ -1051,6 +1055,8 @@ class BayesianBisGaitDetector:
                         cs = [max(cs, key=lambda x: pz[x])]
                     for pk in cs:
                         bf = ss + pk
+                        if pz[pk] < min_confidence:
+                            continue
                         if not any(abs(bf - ev.frame_index) < md for ev in ve if ev.side == side):
                             nearest_dp = min(abs(bf - ev.frame_index) for ev in ve)
                             if nearest_dp > max_boundary_dist:
