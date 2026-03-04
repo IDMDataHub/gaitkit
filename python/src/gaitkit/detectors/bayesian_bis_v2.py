@@ -1000,6 +1000,30 @@ class BayesianBisV2GaitDetector:
             out.append(GaitEvent(rf, rf/self.fps, event.event_type, event.side, event.probability))
         return out
 
+    @staticmethod
+    def _would_break_alternation(new_event, existing_events):
+        """Return True if inserting *new_event* would place two consecutive
+        same-side events of the same type (HS or TO)."""
+        same_type = sorted(
+            [ev for ev in existing_events if ev.event_type == new_event.event_type],
+            key=lambda ev: ev.frame_index,
+        )
+        if not same_type:
+            return False
+        f = new_event.frame_index
+        prev_ev = None
+        next_ev = None
+        for ev in same_type:
+            if ev.frame_index < f:
+                prev_ev = ev
+            elif ev.frame_index > f and next_ev is None:
+                next_ev = ev
+        if prev_ev and prev_ev.side == new_event.side:
+            return True
+        if next_ev and next_ev.side == new_event.side:
+            return True
+        return False
+
     def _boundary_events(self, crossings, ve, ep, nf, rm):
         be = []
         if not crossings or not ve:
@@ -1041,7 +1065,9 @@ class BayesianBisV2GaitDetector:
                         bf = ss + pk
                         if not any(abs(bf - ev.frame_index) < md for ev in ve if ev.side == side):
                             fet = "heel_strike" if et == "hs" else "toe_off"
-                            be.append(GaitEvent(bf, bf/self.fps, fet, side, float(pz[pk])))
+                            candidate = GaitEvent(bf, bf/self.fps, fet, side, float(pz[pk]))
+                            if not self._would_break_alternation(candidate, ve + be):
+                                be.append(candidate)
         ss, se = lc, nf
         if se > ss + md:
             for side in ["left", "right"]:
@@ -1066,26 +1092,25 @@ class BayesianBisV2GaitDetector:
                             fet = "heel_strike" if et == "hs" else "toe_off"
                             if et == "to" and (nf - bf) < T * self.TRAILING_TO_SUPPRESS_RATIO:
                                 continue
-                            be.append(GaitEvent(bf, bf/self.fps, fet, side, float(pz[pk])))
+                            candidate = GaitEvent(bf, bf/self.fps, fet, side, float(pz[pk]))
+                            if not self._would_break_alternation(candidate, ve + be):
+                                be.append(candidate)
         return be
 
     def _gap_events(self, ee, ep, nf, rm):
         ge = []
         if len(ee) < 2:
             return ge
-        ahs = sorted([ev for ev in ee if ev.event_type == "heel_strike"], key=lambda ev: ev.frame_index)
-        if len(ahs) < 2:
-            return ge
-        ivs = np.diff([ev.frame_index for ev in ahs])
-        tm = np.median(ivs)
-        gt = tm * self.GAP_THRESHOLD_RATIO
-        md = int(tm / 4)
         for side in ["left", "right"]:
             for ek, en in [("hs", "heel_strike"), ("to", "toe_off")]:
                 se_list = sorted([ev for ev in ee if ev.event_type == en and ev.side == side], key=lambda ev: ev.frame_index)
                 if len(se_list) < 2:
                     continue
                 fs = [ev.frame_index for ev in se_list]
+                ivs = np.diff(fs)
+                tm = np.median(ivs)
+                gt = tm * self.GAP_THRESHOLD_RATIO
+                md = int(tm / 4)
                 for i in range(len(fs) - 1):
                     if fs[i+1] - fs[i] > gt:
                         ss_g, sse = fs[i] + md, fs[i+1] - md
@@ -1099,7 +1124,9 @@ class BayesianBisV2GaitDetector:
                             for pk in pks:
                                 f_idx = ss_g + pk
                                 if not any(abs(f_idx - ev.frame_index) < md for ev in ee + ge if ev.side == side and ev.event_type == en):
-                                    ge.append(GaitEvent(f_idx, f_idx/self.fps, en, side, float(pz[pk])))
+                                    candidate = GaitEvent(f_idx, f_idx/self.fps, en, side, float(pz[pk]))
+                                    if not self._would_break_alternation(candidate, ee + ge):
+                                        ge.append(candidate)
         return ge
 
     def _build_cycles(self, hs, to):
