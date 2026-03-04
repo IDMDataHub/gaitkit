@@ -991,6 +991,7 @@ class BayesianBisGaitDetector:
         lc = crossings[-1].end_frame
         T = rm.T1 if rm.T1 > 0 else self.min_crossing_frames * 2
         md = int(T / 4)
+        max_boundary_dist = T * 1.5
         ss, se = 0, fc
         if se > ss + md:
             for side in ["left", "right"]:
@@ -1023,6 +1024,9 @@ class BayesianBisGaitDetector:
                     for pk in cs:
                         bf = ss + pk
                         if not any(abs(bf - ev.frame_index) < md for ev in ve if ev.side == side):
+                            nearest_dp = min(abs(bf - ev.frame_index) for ev in ve)
+                            if nearest_dp > max_boundary_dist:
+                                continue
                             fet = "heel_strike" if et == "hs" else "toe_off"
                             candidate = GaitEvent(bf, bf/self.fps, fet, side, float(pz[pk]))
                             if not self._would_break_alternation(candidate, ve + be):
@@ -1048,6 +1052,9 @@ class BayesianBisGaitDetector:
                     for pk in cs:
                         bf = ss + pk
                         if not any(abs(bf - ev.frame_index) < md for ev in ve if ev.side == side):
+                            nearest_dp = min(abs(bf - ev.frame_index) for ev in ve)
+                            if nearest_dp > max_boundary_dist:
+                                continue
                             fet = "heel_strike" if et == "hs" else "toe_off"
                             if et == "to" and (nf - bf) < T * self.TRAILING_TO_SUPPRESS_RATIO:
                                 continue
