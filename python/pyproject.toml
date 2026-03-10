@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gaitkit"
-version = "1.4.3"
+version = "1.4.4"
 description = "Universal gait event detection toolkit — 10 methods including BIKE, with C-accelerated backends"
 readme = "README.md"
 license = "MIT"
-requires-python = ">=3.10"
+requires-python = ">=3.9"
 authors = [
     {name = "Frédéric Fer", email = "f.fer@institut-myologie.org"}
 ]
