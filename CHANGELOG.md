@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.5 (2026-03-15)
+
+### Fixed
+- Enforce global HS/TO alternation after boundary and gap event insertion.
+  `_boundary_events` and `_gap_events` could produce consecutive same-type
+  events (e.g. HS, HS) on noisy input signals; new `_enforce_alternation`
+  post-processing removes the lower-probability duplicate.
+
 ## Unreleased
 
 ## 1.2.4 (2026-02-20)

@@ -222,6 +222,8 @@ class BayesianBisGaitDetector:
         events.extend(ge)
         events.sort(key=lambda e: e.frame_index)
 
+        events = self._enforce_alternation(events)
+
         hs = [e for e in events if e.event_type == "heel_strike"]
         to = [e for e in events if e.event_type == "toe_off"]
 
@@ -982,6 +984,34 @@ class BayesianBisGaitDetector:
         if next_ev and next_ev.side == new_event.side:
             return True
         return False
+
+    @staticmethod
+    def _enforce_alternation(events):
+        """Remove post-DP events that break global HS/TO alternation.
+
+        After boundary and gap events are added, the global sequence may
+        contain consecutive same-type events (e.g. HS, HS). This removes
+        the lower-probability duplicate from each violation pair.
+        Only removes events added by boundary/gap (probability < 1.0 threshold
+        is not used — instead, when two consecutive same-type events are found,
+        the one farther from its expected phase position is removed).
+        """
+        if len(events) < 2:
+            return events
+        changed = True
+        while changed:
+            changed = False
+            events = sorted(events, key=lambda e: e.frame_index)
+            for i in range(len(events) - 1):
+                if events[i].event_type == events[i + 1].event_type:
+                    # Remove the one with lower probability
+                    if events[i].probability <= events[i + 1].probability:
+                        events.pop(i)
+                    else:
+                        events.pop(i + 1)
+                    changed = True
+                    break
+        return events
 
     def _boundary_events(self, crossings, ve, ep, nf, rm):
         be = []
