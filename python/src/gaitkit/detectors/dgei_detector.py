@@ -129,9 +129,14 @@ class DGEIDetector:
                 dgei_neg[i] = np.sum(alpha * np.abs(window[neg_mask]) +
                                      beta * np.abs(window[neg_mask]))
 
-        # Smooth DGEI curves.
-        dgei_pos = gaussian_filter1d(dgei_pos, sigma=2)
-        dgei_neg = gaussian_filter1d(dgei_neg, sigma=2)
+        # Smooth DGEI curves.  At MoCap rates (>=100 fps) keep the
+        # original sigma=2 to avoid any regression on marker data.
+        if self.fps >= 100:
+            smooth_sigma = 2.0  # original constant
+        else:
+            smooth_sigma = max(1.0, 0.020 * self.fps)
+        dgei_pos = gaussian_filter1d(dgei_pos, sigma=smooth_sigma)
+        dgei_neg = gaussian_filter1d(dgei_neg, sigma=smooth_sigma)
 
         return dgei_pos, dgei_neg
 

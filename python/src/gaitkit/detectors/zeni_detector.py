@@ -183,8 +183,14 @@ class ZeniDetector:
             right_ankle_rel = -right_ankle_rel
 
         if self.smooth_window > 1 and n > self.smooth_window:
-            left_ankle_rel = gaussian_filter1d(left_ankle_rel, self.smooth_window / 3)
-            right_ankle_rel = gaussian_filter1d(right_ankle_rel, self.smooth_window / 3)
+            # At MoCap rates (>=100 fps) keep original formula.
+            # At lower fps scale sigma to maintain ~17 ms temporal width.
+            if self.fps >= 100:
+                sigma = self.smooth_window / 3  # original: 1.67 with sw=5
+            else:
+                sigma = max(1.0, 0.017 * self.fps)
+            left_ankle_rel = gaussian_filter1d(left_ankle_rel, sigma)
+            right_ankle_rel = gaussian_filter1d(right_ankle_rel, sigma)
 
         hs_l, _ = find_peaks(left_ankle_rel, distance=self.min_peak_distance, prominence=0.01)
         hs_r, _ = find_peaks(right_ankle_rel, distance=self.min_peak_distance, prominence=0.01)

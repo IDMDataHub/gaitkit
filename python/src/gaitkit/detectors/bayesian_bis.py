@@ -179,11 +179,14 @@ class BayesianBisGaitDetector:
         if rhythm_sigma_ratio <= 0:
             raise ValueError("rhythm_sigma_ratio must be strictly positive")
         self.fps = fps
-        # All internal windows are defined in milliseconds and converted to
-        # frames so that temporal coverage is FPS-independent.
-        # Design-point values come from the original 200 fps / 11-frame defaults.
+        # At MoCap rates (>=100 fps) keep the original 11-frame default so
+        # that marker-based benchmarks are strictly unchanged.  At lower fps
+        # (markerless video) scale the window in milliseconds.
         if smoothing_window is None:
-            smoothing_window = max(5, round(self.SMOOTHING_MS / 1000 * fps))
+            if fps >= 100:
+                smoothing_window = 11  # original MoCap default
+            else:
+                smoothing_window = max(5, round(self.SMOOTHING_MS / 1000 * fps))
         if smoothing_window < 5:
             raise ValueError("smoothing_window must be >= 5")
         self.smoothing_window = smoothing_window if smoothing_window % 2 == 1 else smoothing_window + 1
@@ -308,7 +311,10 @@ class BayesianBisGaitDetector:
         pm = np.max(ps)
         if pm > 0:
             ps = ps / pm
-        ps_sigma = max(1.0, self.PS_SIGMA_MS / 1000 * self.fps)
+        if self.fps >= 100:
+            ps_sigma = self.P_SIGNAL_SMOOTHING_SIGMA  # original: 2.0
+        else:
+            ps_sigma = max(1.0, self.PS_SIGMA_MS / 1000 * self.fps)
         ps = gaussian_filter1d(ps, sigma=ps_sigma)
         self.debug_data["p_signal"] = ps.copy()
         return ps
@@ -1082,12 +1088,16 @@ class BayesianBisGaitDetector:
         diff = self.debug_data.get("diff")
         if diff is None or len(diff) < 3:
             return events
-        # Only compensate when the actual SavGol temporal window exceeds
-        # 1.4× the design target (55 ms).  At >=100 fps the window is
-        # <=70 ms and the algorithm handles the delay natively.
-        actual_ms = self.smoothing_window / self.fps * 1000
-        if actual_ms > self.SMOOTHING_MS * 1.4:
-            bias_s = (self.smoothing_window - 1) / (2 * self.fps) * 0.5
+        # Only compensate at low fps (<100) where the SavGol temporal
+        # window is much wider than the 55 ms design target, introducing
+        # a measurable forward shift.  At MoCap rates (>=100 fps) no
+        # correction is applied — zero regression on marker-based data.
+        if self.fps < 100:
+            actual_ms = self.smoothing_window / self.fps * 1000
+            if actual_ms > self.SMOOTHING_MS * 1.4:
+                bias_s = (self.smoothing_window - 1) / (2 * self.fps) * 0.5
+            else:
+                bias_s = 0.0
         else:
             bias_s = 0.0
         refined = []

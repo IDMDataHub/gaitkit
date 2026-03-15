@@ -7,12 +7,15 @@
   defined in milliseconds and converted to frames, making the detector
   FPS-independent.  Previously hard-coded frame counts caused over-smoothing
   at low frame rates (e.g. 30 fps markerless video).
+  At MoCap rates (≥100 fps) original defaults are preserved — zero regression.
 - BIKE: sub-frame interpolation on the diff zero-crossing refines event
   timing beyond integer-frame precision.
-- BIKE: SavGol bias compensation at low FPS (≤60 fps) corrects the
+- BIKE: SavGol bias compensation at low FPS (<100 fps) corrects the
   systematic forward shift introduced by polynomial smoothing on coarsely
   sampled trajectories.  At 30 fps, F1@50ms improves from 0.55 to 0.93
   on BioCV cam05 markerless data.
+- DGEI, Vancanneyt, Zeni: FPS-adaptive smoothing/windowing at low frame
+  rates (<100 fps) for markerless video; original MoCap defaults preserved.
 
 ## 1.4.5 (2026-03-15)
 

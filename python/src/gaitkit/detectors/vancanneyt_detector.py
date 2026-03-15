@@ -138,7 +138,7 @@ class VancanneytDetector:
 
     def __init__(self, fps=100.0, filter_cutoff=None, vx_threshold=None,
                  vy_threshold=None, vz_threshold=None,
-                 windowing_mph_coeff=0.5, windowing_mpd=50,
+                 windowing_mph_coeff=0.5, windowing_mpd=None,
                  fo_frame_correction=0):
         if fps <= 0:
             raise ValueError("fps must be strictly positive")
@@ -152,6 +152,13 @@ class VancanneytDetector:
             raise ValueError("vz_threshold must be >= 0")
         if windowing_mph_coeff < 0:
             raise ValueError("windowing_mph_coeff must be >= 0")
+        # At MoCap rates (>=100 fps) keep the original default of 50 frames.
+        # At lower fps (markerless video) scale to maintain ~500 ms.
+        if windowing_mpd is None:
+            if fps >= 100:
+                windowing_mpd = 50  # original constant
+            else:
+                windowing_mpd = max(5, round(0.500 * fps))
         if windowing_mpd <= 0:
             raise ValueError("windowing_mpd must be strictly positive")
         self.fps = fps
