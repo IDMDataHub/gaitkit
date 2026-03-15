@@ -147,6 +147,12 @@ class BayesianBisGaitDetector:
     LOCAL_SIGMA_MIN_RATIO = 0.01
     P_SIGNAL_PROXIMITY_BANDWIDTH = 0.3
     P_SIGNAL_SMOOTHING_SIGMA = 2.0
+    # ── Time-based constants (ms) ─────────────────────────────────────
+    # Design-point: 200 fps, smoothing_window = 11 → 55 ms
+    SMOOTHING_MS = 55          # SavGol trajectory smoothing
+    HALF_WIN_MS = 300          # p_signal local-sigma window  (30 fr @ 100 fps)
+    VEL_HALF_WIN_MS = 150      # p_signal velocity-norm window (15 fr @ 100 fps)
+    PS_SIGMA_MS = 10           # p_signal Gaussian post-smoothing (2 fr @ 200 fps)
     BOUNDARY_PEAK_HEIGHT_LEADING = 0.40
     BOUNDARY_PEAK_PROMINENCE_LEADING = 0.10
     BOUNDARY_PEAK_HEIGHT_TRAILING = 0.35
@@ -163,18 +169,23 @@ class BayesianBisGaitDetector:
     VERTICAL_CORRECTION_MIN_SHIFT = 2
     VERTICAL_RANGE_THRESHOLD = 5.0
 
-    def __init__(self, fps: float = 100.0, smoothing_window: int = 11,
+    def __init__(self, fps: float = 100.0, smoothing_window: int = None,
                  min_crossing_distance: float = 0.2,
                  rhythm_sigma_ratio: float = 0.15) -> None:
         if fps <= 0:
             raise ValueError("fps must be strictly positive")
-        if smoothing_window < 5:
-            raise ValueError("smoothing_window must be >= 5")
         if min_crossing_distance <= 0:
             raise ValueError("min_crossing_distance must be strictly positive")
         if rhythm_sigma_ratio <= 0:
             raise ValueError("rhythm_sigma_ratio must be strictly positive")
         self.fps = fps
+        # All internal windows are defined in milliseconds and converted to
+        # frames so that temporal coverage is FPS-independent.
+        # Design-point values come from the original 200 fps / 11-frame defaults.
+        if smoothing_window is None:
+            smoothing_window = max(5, round(self.SMOOTHING_MS / 1000 * fps))
+        if smoothing_window < 5:
+            raise ValueError("smoothing_window must be >= 5")
         self.smoothing_window = smoothing_window if smoothing_window % 2 == 1 else smoothing_window + 1
         self.min_crossing_frames = int(min_crossing_distance * fps)
         self.rhythm_sigma_ratio = rhythm_sigma_ratio
@@ -204,6 +215,8 @@ class BayesianBisGaitDetector:
         if has_landmarks:
             features = self._extract_biomechanical_features(angle_frames)
             events = self._bayesian_event_assignment(crossings, features, angle_frames)
+            # Polarity check removed: too aggressive on noisy markerless
+            # features (flips entire sequence on borderline mean).
             # Use Zeni-style probs for boundary/gap (Bayesian probs saturate)
             ep = self._event_probs_zeni(angle_frames)
             ep = self._reinforce_event_probs(ep, 2, 0.1)
@@ -223,6 +236,7 @@ class BayesianBisGaitDetector:
         events.sort(key=lambda e: e.frame_index)
 
         events = self._enforce_alternation(events)
+        events = self._interpolate_crossing_times(events)
 
         hs = [e for e in events if e.event_type == "heel_strike"]
         to = [e for e in events if e.event_type == "toe_off"]
@@ -259,7 +273,8 @@ class BayesianBisGaitDetector:
         ds_global = np.std(diff)
         n = len(diff)
         if n > 20 and ds_global > 0:
-            half_win = max(self.min_crossing_frames * 2, 30)
+            half_win = max(self.min_crossing_frames * 2,
+                          round(self.HALF_WIN_MS / 1000 * self.fps))
             sigma_local = np.full(n, ds_global)
             for i in range(n):
                 ws = max(0, i - half_win)
@@ -276,7 +291,8 @@ class BayesianBisGaitDetector:
             sigma_kernel = np.maximum(sigma_kernel, 0.01)
             pp = np.exp(-0.5 * (diff / sigma_kernel)**2)
             va = np.abs(dv)
-            vel_half_win = max(self.min_crossing_frames, 15)
+            vel_half_win = max(self.min_crossing_frames,
+                              round(self.VEL_HALF_WIN_MS / 1000 * self.fps))
             va_local_max = np.ones(n)
             for i in range(n):
                 ws = max(0, i - vel_half_win)
@@ -292,7 +308,8 @@ class BayesianBisGaitDetector:
         pm = np.max(ps)
         if pm > 0:
             ps = ps / pm
-        ps = gaussian_filter1d(ps, sigma=self.P_SIGNAL_SMOOTHING_SIGMA)
+        ps_sigma = max(1.0, self.PS_SIGMA_MS / 1000 * self.fps)
+        ps = gaussian_filter1d(ps, sigma=ps_sigma)
         self.debug_data["p_signal"] = ps.copy()
         return ps
 
@@ -986,6 +1003,37 @@ class BayesianBisGaitDetector:
         return False
 
     @staticmethod
+    def _check_polarity(events, features):
+        """Verify HS/TO polarity using knee_heel_ap sign.
+
+        At heel-strike, the heel is in front of the knee (knee_heel_ap > 0).
+        At toe-off, it is behind (knee_heel_ap < 0).
+        If the mean knee_heel_ap at HS events is negative, the DP assigned
+        the wrong polarity — flip all HS↔TO labels.
+        """
+        hs_events = [e for e in events if e.event_type == "heel_strike"]
+        if not hs_events:
+            return events
+        vals = []
+        for e in hs_events:
+            f = features.get(e.side, {})
+            khap = f.get("knee_heel_ap")
+            if khap is not None and e.frame_index < len(khap):
+                vals.append(khap[e.frame_index])
+        if not vals:
+            return events
+        mean_khap = np.mean(vals)
+        if mean_khap < 0:
+            # Flip all labels
+            flipped = []
+            for e in events:
+                new_type = "toe_off" if e.event_type == "heel_strike" else "heel_strike"
+                flipped.append(GaitEvent(e.frame_index, e.time, new_type,
+                                         e.side, e.probability))
+            return flipped
+        return events
+
+    @staticmethod
     def _enforce_alternation(events):
         """Remove post-DP events that break global HS/TO alternation.
 
@@ -1012,6 +1060,55 @@ class BayesianBisGaitDetector:
                     changed = True
                     break
         return events
+
+    def _interpolate_crossing_times(self, events):
+        """Refine event times: sub-frame interpolation + SavGol bias correction.
+
+        Two corrections are applied:
+
+        1. **Sub-frame interpolation** — finds the nearest zero-crossing in
+           the diff signal within ±2 frames and linearly interpolates between
+           the straddling frames.  Recovers up to half-a-frame of precision.
+
+        2. **SavGol bias compensation** — the SavGol polynomial filter
+           applied to trajectories shifts zero-crossings forward in time
+           (the foot decelerates sharply at HS, and smoothing rounds this
+           corner).  The bias is proportional to half the SavGol window.
+           A factor of 0.5 accounts for the polynomial (not boxcar) shape.
+
+        At 200 fps (sw=11, 55 ms) no bias is applied (within design range).
+        At 30 fps (sw=5, 167 ms) the correction is ~33 ms.
+        """
+        diff = self.debug_data.get("diff")
+        if diff is None or len(diff) < 3:
+            return events
+        # Only compensate when the actual SavGol temporal window exceeds
+        # 1.4× the design target (55 ms).  At >=100 fps the window is
+        # <=70 ms and the algorithm handles the delay natively.
+        actual_ms = self.smoothing_window / self.fps * 1000
+        if actual_ms > self.SMOOTHING_MS * 1.4:
+            bias_s = (self.smoothing_window - 1) / (2 * self.fps) * 0.5
+        else:
+            bias_s = 0.0
+        refined = []
+        for e in events:
+            fi = e.frame_index
+            best_t = e.time
+            best_dist = float("inf")
+            for i in range(max(0, fi - 2), min(len(diff) - 1, fi + 3)):
+                d0, d1 = diff[i], diff[i + 1]
+                if d0 * d1 <= 0 and (abs(d0) + abs(d1)) > 0:
+                    frac = abs(d0) / (abs(d0) + abs(d1))
+                    t_cross = (i + frac) / self.fps
+                    dist = abs(t_cross - fi / self.fps)
+                    if dist < best_dist:
+                        best_dist = dist
+                        best_t = t_cross
+            # Apply SavGol bias compensation
+            best_t = max(0.0, best_t - bias_s)
+            refined.append(GaitEvent(fi, best_t, e.event_type,
+                                     e.side, e.probability))
+        return refined
 
     def _boundary_events(self, crossings, ve, ep, nf, rm):
         be = []

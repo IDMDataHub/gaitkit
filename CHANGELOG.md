@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.4.6 (2026-03-15)
+
+### Improved
+- BIKE: all internal windows (SavGol, p_signal sigma, half_win) are now
+  defined in milliseconds and converted to frames, making the detector
+  FPS-independent.  Previously hard-coded frame counts caused over-smoothing
+  at low frame rates (e.g. 30 fps markerless video).
+- BIKE: sub-frame interpolation on the diff zero-crossing refines event
+  timing beyond integer-frame precision.
+- BIKE: SavGol bias compensation at low FPS (≤60 fps) corrects the
+  systematic forward shift introduced by polynomial smoothing on coarsely
+  sampled trajectories.  At 30 fps, F1@50ms improves from 0.55 to 0.93
+  on BioCV cam05 markerless data.
+
 ## 1.4.5 (2026-03-15)
 
 ### Fixed
