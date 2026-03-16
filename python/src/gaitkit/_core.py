@@ -359,7 +359,7 @@ def _events_to_dicts(events, fps: float) -> List[Dict[str, Any]]:
     for ev in events:
         result.append({
             "frame": int(ev.frame_index),
-            "time": round(ev.frame_index / fps, 4),
+            "time": round(ev.time if hasattr(ev, "time") and ev.time is not None else ev.frame_index / fps, 4),
             "side": ev.side,
             "confidence": getattr(ev, "probability", 1.0),
         })

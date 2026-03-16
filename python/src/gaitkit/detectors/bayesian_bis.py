@@ -1070,20 +1070,23 @@ class BayesianBisGaitDetector:
     def _interpolate_crossing_times(self, events):
         """Refine event times: sub-frame interpolation + SavGol bias correction.
 
-        Two corrections are applied:
+        Three corrections are applied:
 
         1. **Sub-frame interpolation** — finds the nearest zero-crossing in
            the diff signal within ±2 frames and linearly interpolates between
            the straddling frames.  Recovers up to half-a-frame of precision.
 
-        2. **SavGol bias compensation** — the SavGol polynomial filter
-           applied to trajectories shifts zero-crossings forward in time
-           (the foot decelerates sharply at HS, and smoothing rounds this
-           corner).  The bias is proportional to half the SavGol window.
-           A factor of 0.5 accounts for the polynomial (not boxcar) shape.
+        2. **Fixed SavGol bias** — compensates the forward shift introduced
+           by the SavGol polynomial filter.  Proportional to half the window.
 
-        At 200 fps (sw=11, 55 ms) no bias is applied (within design range).
-        At 30 fps (sw=5, 167 ms) the correction is ~33 ms.
+        3. **Adaptive curvature bias** — additional correction modulated by
+           the local curvature of the diff signal at each zero-crossing.
+           Steep crossings (high curvature) get less extra correction,
+           gentle crossings (low curvature) get more.  Scaled by 0.6 to
+           prevent overcorrection.
+
+        At MoCap rates (>=100 fps) no bias correction is applied.
+        At 30 fps the combined correction is typically ~50 ms.
         """
         diff = self.debug_data.get("diff")
         if diff is None or len(diff) < 3:
@@ -1095,11 +1098,18 @@ class BayesianBisGaitDetector:
         if self.fps < 100:
             actual_ms = self.smoothing_window / self.fps * 1000
             if actual_ms > self.SMOOTHING_MS * 1.4:
-                bias_s = (self.smoothing_window - 1) / (2 * self.fps) * 0.5
+                fixed_bias_s = (self.smoothing_window - 1) / (2 * self.fps) * 0.5
             else:
-                bias_s = 0.0
+                fixed_bias_s = 0.0
         else:
-            bias_s = 0.0
+            fixed_bias_s = 0.0
+        # Pre-compute curvature (second derivative) of diff for adaptive bias
+        if fixed_bias_s > 0 and len(diff) > 5:
+            d2_diff = np.gradient(np.gradient(diff))
+            med_curv = np.median(np.abs(d2_diff))
+        else:
+            d2_diff = None
+            med_curv = 0.0
         refined = []
         for e in events:
             fi = e.frame_index
@@ -1114,8 +1124,15 @@ class BayesianBisGaitDetector:
                     if dist < best_dist:
                         best_dist = dist
                         best_t = t_cross
-            # Apply SavGol bias compensation
-            best_t = max(0.0, best_t - bias_s)
+            # Apply fixed SavGol bias
+            best_t = max(0.0, best_t - fixed_bias_s)
+            # Apply additional adaptive curvature bias
+            if fixed_bias_s > 0 and d2_diff is not None and med_curv > 0:
+                local_curv = abs(d2_diff[min(fi, len(d2_diff) - 1)])
+                curv_ratio = local_curv / (med_curv + 1e-10)
+                extra_bias = fixed_bias_s / max(0.1, np.sqrt(curv_ratio))
+                extra_bias = min(extra_bias, fixed_bias_s * 2) * 0.6
+                best_t = max(0.0, best_t - extra_bias)
             refined.append(GaitEvent(fi, best_t, e.event_type,
                                      e.side, e.probability))
         return refined
