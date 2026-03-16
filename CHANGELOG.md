@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.4.7 (2026-03-16)
+
+### Fixed
+- BioCV extractor: compute valid marker range (`valid_frame_range`) from the
+  intersection of 10 critical markers being non-zero.  Visual3D joint centres
+  are zero-padded outside the capture volume; this fix trims angle frames and
+  GT events to the valid range, eliminating artefacts for event detectors.
+- All detectors (BIKE, DGEI, Vancanneyt, Zeni): preserve original MoCap
+  defaults at ≥100 fps.  FPS-adaptive parameters only apply below 100 fps,
+  ensuring zero regression on marker-based benchmarks.
+
 ## 1.4.6 (2026-03-15)
 
 ### Improved
@@ -12,8 +23,7 @@
   timing beyond integer-frame precision.
 - BIKE: SavGol bias compensation at low FPS (<100 fps) corrects the
   systematic forward shift introduced by polynomial smoothing on coarsely
-  sampled trajectories.  At 30 fps, F1@50ms improves from 0.55 to 0.93
-  on BioCV cam05 markerless data.
+  sampled trajectories.
 - DGEI, Vancanneyt, Zeni: FPS-adaptive smoothing/windowing at low frame
   rates (<100 fps) for markerless video; original MoCap defaults preserved.
 
