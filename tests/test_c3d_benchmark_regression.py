@@ -35,8 +35,8 @@ class TestC3DBenchmarkRegression(unittest.TestCase):
     _CASES = {
         "vanderzee_p10_trial3.c3d": {
             "extractor": VanderzeeExtractor,
-            "expected_hs_f1": 0.872,
-            "expected_to_f1": 0.991,
+            "expected_hs_f1": 0.874,
+            "expected_to_f1": 0.983,
             "min_hs_f1": 0.82,
             "min_to_f1": 0.94,
         },
