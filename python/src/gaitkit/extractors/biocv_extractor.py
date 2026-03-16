@@ -83,6 +83,15 @@ class BioCVExtractor(BaseExtractor):
         'HIP_MIDPOINT': 'hip_midpoint',
     }
 
+    # Markers required for gait event detection (intersection determines valid range)
+    _CRITICAL_MARKERS = [
+        'LEFT_KNEE', 'RIGHT_KNEE',
+        'LEFT_HIP', 'RIGHT_HIP',
+        'LEFT_ANKLE', 'RIGHT_ANKLE',
+        'HEEL_L', 'HEEL_R',
+        'TOE_L', 'TOE_R',
+    ]
+
     # Trial type patterns that contain gait events
     _VALID_TRIAL_PATTERN = re.compile(
         r'^P\d+_(WALK|RUN|CMJM|CMJS|HOP)_\d+$'
@@ -296,8 +305,46 @@ class BioCVExtractor(BaseExtractor):
                     return pos
         return None
 
+    def _compute_valid_range(self, c3d_data) -> Optional[tuple]:
+        """Find frame range where all critical markers have non-zero data.
+
+        Visual3D joint centres are only computed for the portion of the trial
+        where the underlying markers are visible.  Outside this range, values
+        are (0,0,0) which creates artefacts for event detectors.
+
+        Returns (start_frame, end_frame) inclusive, or None if no valid range.
+        """
+        try:
+            labels = c3d_data['parameters']['POINT']['LABELS']['value']
+            data = c3d_data['data']['points']  # (4, n_markers, n_frames)
+            n_frames = data.shape[2]
+        except (KeyError, IndexError):
+            return None
+
+        valid_mask = np.ones(n_frames, dtype=bool)
+        for marker_name in self._CRITICAL_MARKERS:
+            if marker_name not in labels:
+                continue
+            idx = labels.index(marker_name)
+            marker_data = data[:3, idx, :]
+            is_zero = np.all(marker_data == 0, axis=0)
+            is_nan = np.any(np.isnan(marker_data), axis=0)
+            valid_mask &= ~is_zero & ~is_nan
+
+        valid_indices = np.where(valid_mask)[0]
+        if len(valid_indices) == 0:
+            return None
+
+        return (int(valid_indices[0]), int(valid_indices[-1]))
+
     def extract_file(self, filepath: Path) -> ExtractionResult:
-        """Extract data from a BioCV trial (markers.c3d + markers.events.frame)."""
+        """Extract data from a BioCV trial (markers.c3d + markers.events.frame).
+
+        Visual3D joint centres are only available for a portion of the trial
+        (markers are zero-filled outside the capture volume).  This method
+        detects the valid frame range and trims the output to avoid feeding
+        zero-padded data to gait event detectors.
+        """
         if not HAS_EZC3D:
             raise RuntimeError("ezc3d not installed")
 
@@ -305,8 +352,7 @@ class BioCVExtractor(BaseExtractor):
         file_info = self._parse_trial_info(filepath)
 
         fps = c3d['parameters']['POINT']['RATE']['value'][0]
-        n_frames = c3d['data']['points'].shape[2]
-        duration_s = n_frames / fps
+        total_n_frames = c3d['data']['points'].shape[2]
 
         # Parse ground truth events from sibling file
         events_path = filepath.parent / 'markers.events.frame'
@@ -314,9 +360,27 @@ class BioCVExtractor(BaseExtractor):
 
         warnings = []
 
-        # Build angle frames
+        # Determine valid frame range from marker data
+        valid_range = self._compute_valid_range(c3d)
+        if valid_range is not None:
+            vr_start, vr_end = valid_range
+            frame_start = vr_start
+            frame_end = vr_end + 1  # exclusive
+        else:
+            frame_start = 0
+            frame_end = total_n_frames
+            warnings.append("Could not determine valid marker range; using full trial")
+
+        n_frames = frame_end - frame_start
+        duration_s = n_frames / fps
+
+        # Filter GT events to valid range
+        for key in ('hs_left', 'hs_right', 'to_left', 'to_right'):
+            events[key] = [f for f in events[key] if frame_start <= f < frame_end]
+
+        # Build angle frames (only for valid range)
         angle_frames = []
-        for frame in range(n_frames):
+        for frame in range(frame_start, frame_end):
             # Joint centres from Visual3D
             left_hip = self._find_landmark(c3d, 'left_hip', frame)
             right_hip = self._find_landmark(c3d, 'right_hip', frame)
@@ -422,9 +486,10 @@ class BioCVExtractor(BaseExtractor):
             event_source="annotated",
             hs_frames={'left': events['hs_left'], 'right': events['hs_right']},
             to_frames={'left': events['to_left'], 'right': events['to_right']},
+            valid_frame_range=valid_range,
         )
 
-        # Compute cadence from HS events
+        # Compute cadence from HS events (within valid range)
         if has_hs:
             all_hs = sorted(events['hs_left'] + events['hs_right'])
             if len(all_hs) > 1:
@@ -438,6 +503,13 @@ class BioCVExtractor(BaseExtractor):
 
         total_hs = len(events['hs_left']) + len(events['hs_right'])
         quality = 0.95 if total_hs >= 4 else (0.8 if total_hs >= 2 else 0.6)
+
+        if valid_range:
+            logger.info(
+                "%s: valid range %d-%d (%d/%d frames, %.1fs)",
+                filepath.parent.name, vr_start, vr_end,
+                n_frames, total_n_frames, duration_s,
+            )
 
         return ExtractionResult(
             source_file=str(filepath),
