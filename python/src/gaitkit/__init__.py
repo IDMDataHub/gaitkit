@@ -11,7 +11,7 @@ Available methods: bike (default), zeni, oconnor, hreljac, mickelborough,
 ghoussayni, vancanneyt, dgei, intellevent, deepevent.
 """
 
-__version__ = "1.4.7"
+__version__ = "1.4.9"
 
 from ._core import detect, list_methods, GaitResult
 from ._ensemble import detect_ensemble
