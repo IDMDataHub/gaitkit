@@ -107,19 +107,23 @@ HS_PRIORS = {
     'R_toe': GaussianPrior(mu=0.61, sigma=0.25, weight=0.6),
     'R_knee': GaussianPrior(mu=0.11, sigma=0.20, weight=0.6),
     'delta_omega': GaussianPrior(mu=0.0, sigma=80.0, weight=0.25),
+    # --- M1: ankle-toe AP separation velocity ---
+    'ankle_toe_ap_vel': GaussianPrior(mu=0.5, sigma=2.0, weight=0.8),
 }
 
 TO_PRIORS = {
     'knee_heel_ap': GaussianPrior(mu=-0.72, sigma=0.15, weight=2.0),
     'ankle_ap_vel': GaussianPrior(mu=0.8, sigma=0.6, weight=1.5),
     'toe_vert': GaussianPrior(mu=0.3, sigma=0.25, weight=0.8),
-    'toe_vert_vel': GaussianPrior(mu=3.5, sigma=2.0, weight=2.5),
+    'toe_vert_vel': GaussianPrior(mu=3.5, sigma=2.0, weight=1.0),
     'knee_angle': GaussianPrior(mu=43.0, sigma=10.0, weight=1.0),
     'knee_angle_vel': GaussianPrior(mu=200.0, sigma=150.0, weight=1.0),
     # --- NEW ratio-based features ---
-    'R_toe': GaussianPrior(mu=0.27, sigma=0.25, weight=0.6),
-    'R_knee': GaussianPrior(mu=0.30, sigma=0.20, weight=0.6),
+    'R_toe': GaussianPrior(mu=0.27, sigma=0.25, weight=0.3),
+    'R_knee': GaussianPrior(mu=0.30, sigma=0.20, weight=2.0),
     'delta_omega': GaussianPrior(mu=100.0, sigma=120.0, weight=0.25),
+    # --- M1: ankle-toe AP separation velocity ---
+    'ankle_toe_ap_vel': GaussianPrior(mu=-3.0, sigma=2.5, weight=2.0),
 }
 
 HS_PHASE_PRIOR = GaussianPrior(mu=0.20, sigma=0.18, weight=1.5)
@@ -501,6 +505,7 @@ class BayesianBisGaitDetector:
             knee_ap = np.zeros(n)
             heel_ap = np.zeros(n)
             ankle_ap = np.zeros(n)
+            toe_ap = np.zeros(n)
             heel_z = np.zeros(n)
             toe_z = np.zeros(n)
             ankle_z = np.zeros(n)
@@ -528,6 +533,7 @@ class BayesianBisGaitDetector:
                     ankle_z[i] = ankle_pos[vert]
                     has_ankle = True
                 if toe_pos:
+                    toe_ap[i] = toe_pos[ap]
                     toe_z[i] = toe_pos[vert]
                     has_toe = True
                 if side == "left":
@@ -569,6 +575,14 @@ class BayesianBisGaitDetector:
                 toe_vert_vel = np.zeros(n)
             knee_angle_smooth = gaussian_filter1d(knee_angle, sigma_s)
             knee_angle_vel = np.gradient(knee_angle_smooth) * self.fps
+
+            # --- M1: ankle-toe AP separation velocity ---
+            if has_toe and has_ankle:
+                ankle_toe_sep = (toe_ap - ankle_ap) * direction / thigh_len
+                ankle_toe_sep_smooth = gaussian_filter1d(ankle_toe_sep, sigma_s)
+                ankle_toe_ap_vel = np.gradient(ankle_toe_sep_smooth) * self.fps
+            else:
+                ankle_toe_ap_vel = np.zeros(n)
 
             # --- NEW: BIS ratio features ---
             # omega_knee = knee angular velocity (deg/s) - already computed
@@ -630,6 +644,8 @@ class BayesianBisGaitDetector:
                 "delta_omega": delta_omega,
                 "vel_confidence": vel_confidence,
                 "has_ankle": has_ankle,
+                # --- M1 ---
+                "ankle_toe_ap_vel": ankle_toe_ap_vel,
             }
         return features
 
@@ -654,6 +670,8 @@ class BayesianBisGaitDetector:
             ll += vc * HS_PRIORS["R_toe"].log_prob_array(f["R_toe"][s:e])
             ll += vc * HS_PRIORS["R_knee"].log_prob_array(f["R_knee"][s:e])
             ll += vc * HS_PRIORS["delta_omega"].log_prob_array(f["delta_omega"][s:e])
+        # --- M1: ankle-toe AP separation velocity ---
+        ll += HS_PRIORS["ankle_toe_ap_vel"].log_prob_array(f["ankle_toe_ap_vel"][s:e])
         return ll
 
     def _compute_log_likelihood_to_array(self, features_side, start, end):
@@ -673,6 +691,8 @@ class BayesianBisGaitDetector:
             ll += vc * TO_PRIORS["R_toe"].log_prob_array(f["R_toe"][s:e])
             ll += vc * TO_PRIORS["R_knee"].log_prob_array(f["R_knee"][s:e])
             ll += vc * TO_PRIORS["delta_omega"].log_prob_array(f["delta_omega"][s:e])
+        # --- M1: ankle-toe AP separation velocity ---
+        ll += TO_PRIORS["ankle_toe_ap_vel"].log_prob_array(f["ankle_toe_ap_vel"][s:e])
         return ll
 
     def _bayesian_event_assignment(self, crossings, features, af):

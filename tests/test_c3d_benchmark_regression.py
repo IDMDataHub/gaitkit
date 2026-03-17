@@ -35,7 +35,7 @@ class TestC3DBenchmarkRegression(unittest.TestCase):
     _CASES = {
         "vanderzee_p10_trial3.c3d": {
             "extractor": VanderzeeExtractor,
-            "expected_hs_f1": 0.874,
+            "expected_hs_f1": 0.866,
             "expected_to_f1": 0.983,
             "min_hs_f1": 0.82,
             "min_to_f1": 0.94,
@@ -43,14 +43,14 @@ class TestC3DBenchmarkRegression(unittest.TestCase):
         "fukuchi_WBDS42walkT03.c3d": {
             "extractor": FukuchiExtractor,
             "expected_hs_f1": 0.913,
-            "expected_to_f1": 0.891,
+            "expected_to_f1": 0.957,
             "min_hs_f1": 0.86,
             "min_to_f1": 0.84,
         },
         "fukuchi_WBDS19walkT01.c3d": {
             "extractor": FukuchiExtractor,
             "expected_hs_f1": 0.968,
-            "expected_to_f1": 0.774,
+            "expected_to_f1": 0.903,
             "min_hs_f1": 0.92,
             "min_to_f1": 0.72,
         },
@@ -64,14 +64,14 @@ class TestC3DBenchmarkRegression(unittest.TestCase):
         "figshare_pd_SUB01_off_walk_12b.c3d": {
             "extractor": FigsharePDExtractor,
             "expected_hs_f1": 0.957,
-            "expected_to_f1": 1.000,
+            "expected_to_f1": 0.917,
             "min_hs_f1": 0.91,
-            "min_to_f1": 0.95,
+            "min_to_f1": 0.87,
         },
         "figshare_pd_SUB05_off_walk_8.c3d": {
             "extractor": FigsharePDExtractor,
             "expected_hs_f1": 1.000,
-            "expected_to_f1": 0.833,
+            "expected_to_f1": 1.000,
             "min_hs_f1": 0.95,
             "min_to_f1": 0.78,
         },

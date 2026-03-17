@@ -93,6 +93,8 @@ class BayesianBisNativeGaitDetector(BayesianBisGaitDetector):
         right_heel_z = np.zeros(n, dtype=np.float64)
         left_toe_z = np.zeros(n, dtype=np.float64)
         right_toe_z = np.zeros(n, dtype=np.float64)
+        left_toe_ap = np.zeros(n, dtype=np.float64)
+        right_toe_ap = np.zeros(n, dtype=np.float64)
         left_ankle_z = np.zeros(n, dtype=np.float64)
         right_ankle_z = np.zeros(n, dtype=np.float64)
         left_knee_angle = np.empty(n, dtype=np.float64)
@@ -151,9 +153,11 @@ class BayesianBisNativeGaitDetector(BayesianBisGaitDetector):
                 right_ankle_z[i] = ra_m[vert]
                 has_ankle_right = True
             if lt:
+                left_toe_ap[i] = lt[ap]
                 left_toe_z[i] = lt[vert]
                 has_toe_left = True
             if rt:
+                right_toe_ap[i] = rt[ap]
                 right_toe_z[i] = rt[vert]
                 has_toe_right = True
 
@@ -176,6 +180,7 @@ class BayesianBisNativeGaitDetector(BayesianBisGaitDetector):
                 knee_ap = left_knee_ap
                 heel_ap = left_heel_ap
                 ankle_ap = left_ankle_ap
+                toe_ap = left_toe_ap
                 heel_z = left_heel_z
                 toe_z = left_toe_z
                 ankle_z = left_ankle_z
@@ -188,6 +193,7 @@ class BayesianBisNativeGaitDetector(BayesianBisGaitDetector):
                 knee_ap = right_knee_ap
                 heel_ap = right_heel_ap
                 ankle_ap = right_ankle_ap
+                toe_ap = right_toe_ap
                 heel_z = right_heel_z
                 toe_z = right_toe_z
                 ankle_z = right_ankle_z
@@ -232,6 +238,14 @@ class BayesianBisNativeGaitDetector(BayesianBisGaitDetector):
 
             knee_angle_smooth = gaussian_filter1d(knee_angle, sigma_s)
             knee_angle_vel = np.gradient(knee_angle_smooth) * self.fps
+
+            # --- M1: ankle-toe AP separation velocity ---
+            if has_toe and has_ankle:
+                ankle_toe_sep = (toe_ap - ankle_ap) * direction / thigh_len
+                ankle_toe_sep_smooth = gaussian_filter1d(ankle_toe_sep, sigma_s)
+                ankle_toe_ap_vel = np.gradient(ankle_toe_sep_smooth) * self.fps
+            else:
+                ankle_toe_ap_vel = np.zeros(n, dtype=np.float64)
 
             omega_knee = knee_angle_vel
             ankle_angle_smooth = gaussian_filter1d(ankle_angle, sigma_s)
@@ -278,6 +292,8 @@ class BayesianBisNativeGaitDetector(BayesianBisGaitDetector):
                 "delta_omega": delta_omega,
                 "vel_confidence": vel_confidence,
                 "has_ankle": has_ankle,
+                # --- M1 ---
+                "ankle_toe_ap_vel": ankle_toe_ap_vel,
             }
         return features
 
