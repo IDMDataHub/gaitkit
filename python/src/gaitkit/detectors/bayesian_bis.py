@@ -661,6 +661,15 @@ class BayesianBisGaitDetector:
                 # --- M1 ---
                 "ankle_toe_ap_vel": ankle_toe_ap_vel,
             }
+        # --- M1 guard: disable ankle_toe_ap_vel if L/R ankle asymmetry ---
+        # Transfemoral amputees have very different ankle mechanics on prosthetic side.
+        # If the L/R ptp ratio is below 0.75, skip ankle_toe_ap_vel for both sides.
+        l_ptp = np.ptp(features["left"]["ankle_toe_ap_vel"])
+        r_ptp = np.ptp(features["right"]["ankle_toe_ap_vel"])
+        ratio = min(l_ptp, r_ptp) / (max(l_ptp, r_ptp) + 1e-10)
+        use_atav = ratio > 0.75
+        for side in ["left", "right"]:
+            features[side]["use_ankle_toe_ap_vel"] = use_atav
         return features
 
     # =======================================================================
@@ -717,7 +726,8 @@ class BayesianBisGaitDetector:
             ll += vc * TO_PRIORS["R_knee"].log_prob_array(f["R_knee"][s:e])
             ll += vc * TO_PRIORS["delta_omega"].log_prob_array(f["delta_omega"][s:e])
         # --- M1: ankle-toe AP separation velocity ---
-        ll += TO_PRIORS["ankle_toe_ap_vel"].log_prob_array(f["ankle_toe_ap_vel"][s:e])
+        if f.get("use_ankle_toe_ap_vel", True):
+            ll += TO_PRIORS["ankle_toe_ap_vel"].log_prob_array(f["ankle_toe_ap_vel"][s:e])
         return ll
 
     def _bayesian_event_assignment(self, crossings, features, af):
