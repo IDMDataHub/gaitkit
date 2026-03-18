@@ -156,6 +156,16 @@ class BayesianBisGaitDetector:
     HALF_WIN_MS = 300          # p_signal local-sigma window  (30 fr @ 100 fps)
     VEL_HALF_WIN_MS = 150      # p_signal velocity-norm window (15 fr @ 100 fps)
     PS_SIGMA_MS = 10           # p_signal Gaussian post-smoothing (2 fr @ 200 fps)
+    # ── Per-feature temporal offsets (ms) ────────────────────────────
+    # Positive = feature peaks BEFORE the true event by this amount.
+    # At evaluation, the feature is read offset frames earlier to
+    # re-align the peak with the true event time.
+    HS_FEATURE_OFFSETS_MS = {
+        'knee_heel_ap': 15,   # max leg extension precedes ground contact by ~25 ms
+    }
+    TO_FEATURE_OFFSETS_MS = {
+        'knee_angle_vel': 15, # knee angular velocity peak precedes toe-off by ~25 ms
+    }
     BOUNDARY_PEAK_HEIGHT_LEADING = 0.40
     BOUNDARY_PEAK_PROMINENCE_LEADING = 0.10
     BOUNDARY_PEAK_HEIGHT_TRAILING = 0.35
@@ -195,6 +205,11 @@ class BayesianBisGaitDetector:
         self.smoothing_window = smoothing_window if smoothing_window % 2 == 1 else smoothing_window + 1
         self.min_crossing_frames = int(min_crossing_distance * fps)
         self.rhythm_sigma_ratio = rhythm_sigma_ratio
+        # Pre-compute per-feature temporal offsets in frames
+        self._hs_offsets = {k: round(v / 1000 * fps)
+                           for k, v in self.HS_FEATURE_OFFSETS_MS.items()}
+        self._to_offsets = {k: round(v / 1000 * fps)
+                           for k, v in self.TO_FEATURE_OFFSETS_MS.items()}
         self.debug_data: Dict = {}
 
     def detect_gait_events(self, angle_frames):
@@ -652,11 +667,22 @@ class BayesianBisGaitDetector:
     # Log-likelihood computation (V1 + BIS features)
     # =======================================================================
 
+    @staticmethod
+    def _offset_slice(arr, s, e, offset):
+        """Return arr[s-offset:e-offset] clamped to valid indices."""
+        if offset == 0:
+            return arr[s:e]
+        n = len(arr)
+        idx = np.arange(s - offset, e - offset).clip(0, n - 1)
+        return arr[idx]
+
     def _compute_log_likelihood_hs_array(self, features_side, start, end):
         f = features_side
         s, e = start, end
         ll = np.zeros(e - s)
-        ll += HS_PRIORS["knee_heel_ap"].log_prob_array(f["knee_heel_ap"][s:e])
+        off_kha = self._hs_offsets.get("knee_heel_ap", 0)
+        ll += HS_PRIORS["knee_heel_ap"].log_prob_array(
+            self._offset_slice(f["knee_heel_ap"], s, e, off_kha))
         ll += HS_PRIORS["ankle_ap_vel"].log_prob_array(f["ankle_ap_vel"][s:e])
         if f["has_heel"]:
             ll += HS_PRIORS["heel_vert"].log_prob_array(f["heel_vert"][s:e])
@@ -681,7 +707,9 @@ class BayesianBisGaitDetector:
             ll += TO_PRIORS["toe_vert"].log_prob_array(f["toe_vert"][s:e])
             ll += TO_PRIORS["toe_vert_vel"].log_prob_array(f["toe_vert_vel"][s:e])
         ll += TO_PRIORS["knee_angle"].log_prob_array(f["knee_angle"][s:e])
-        ll += TO_PRIORS["knee_angle_vel"].log_prob_array(f["knee_angle_vel"][s:e])
+        off_kav = self._to_offsets.get("knee_angle_vel", 0)
+        ll += TO_PRIORS["knee_angle_vel"].log_prob_array(
+            self._offset_slice(f["knee_angle_vel"], s, e, off_kav))
         # --- NEW BIS features (weighted by velocity confidence) ---
         if f.get("has_toe", False) or f.get("has_ankle", False):
             vc = f["vel_confidence"][s:e]
