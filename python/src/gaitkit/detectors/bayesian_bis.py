@@ -107,8 +107,7 @@ HS_PRIORS = {
     'R_toe': GaussianPrior(mu=0.61, sigma=0.25, weight=0.6),
     'R_knee': GaussianPrior(mu=0.11, sigma=0.20, weight=0.6),
     'delta_omega': GaussianPrior(mu=0.0, sigma=80.0, weight=0.25),
-    # --- M1: ankle-toe AP separation velocity ---
-    'ankle_toe_ap_vel': GaussianPrior(mu=0.5, sigma=2.0, weight=0.8),
+    # --- M1: ankle-toe AP separation velocity (TO-only, no HS prior) ---
 }
 
 TO_PRIORS = {
@@ -670,8 +669,6 @@ class BayesianBisGaitDetector:
             ll += vc * HS_PRIORS["R_toe"].log_prob_array(f["R_toe"][s:e])
             ll += vc * HS_PRIORS["R_knee"].log_prob_array(f["R_knee"][s:e])
             ll += vc * HS_PRIORS["delta_omega"].log_prob_array(f["delta_omega"][s:e])
-        # --- M1: ankle-toe AP separation velocity ---
-        ll += HS_PRIORS["ankle_toe_ap_vel"].log_prob_array(f["ankle_toe_ap_vel"][s:e])
         return ll
 
     def _compute_log_likelihood_to_array(self, features_side, start, end):
