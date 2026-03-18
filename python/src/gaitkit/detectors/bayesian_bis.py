@@ -182,11 +182,11 @@ class BayesianBisGaitDetector:
         if rhythm_sigma_ratio <= 0:
             raise ValueError("rhythm_sigma_ratio must be strictly positive")
         self.fps = fps
-        # At MoCap rates (>=100 fps) keep the original 11-frame default so
-        # that marker-based benchmarks are strictly unchanged.  At lower fps
-        # (markerless video) scale the window in milliseconds.
+        # Scale smoothing window proportionally to fps.
+        # Design point: 200 fps → 11 frames (55 ms).
+        # At high MoCap rates (>=150 fps) keep the original 11-frame default.
         if smoothing_window is None:
-            if fps >= 100:
+            if fps >= 150:
                 smoothing_window = 11  # original MoCap default
             else:
                 smoothing_window = max(5, round(self.SMOOTHING_MS / 1000 * fps))
