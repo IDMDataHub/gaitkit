@@ -1146,16 +1146,13 @@ class BayesianBisGaitDetector:
         diff = self.debug_data.get("diff")
         if diff is None or len(diff) < 3:
             return events
-        # Only compensate at low fps (<100) where the SavGol temporal
-        # window is much wider than the 55 ms design target, introducing
-        # a measurable forward shift.  At MoCap rates (>=100 fps) no
-        # correction is applied — zero regression on marker-based data.
-        if self.fps < 100:
-            actual_ms = self.smoothing_window / self.fps * 1000
-            if actual_ms > self.SMOOTHING_MS * 1.4:
-                fixed_bias_s = (self.smoothing_window - 1) / (2 * self.fps) * 0.5
-            else:
-                fixed_bias_s = 0.0
+        # Compensate the forward shift introduced by SavGol smoothing
+        # when the temporal window exceeds ~115% of the 55 ms design target.
+        # At 200 fps (ratio 1.00) no correction is needed; at 100 fps
+        # (ratio 1.27) ~15 ms correction is applied; at 60/30 fps larger.
+        actual_ms = self.smoothing_window / self.fps * 1000
+        if actual_ms / self.SMOOTHING_MS > 1.15:
+            fixed_bias_s = (self.smoothing_window - 1) / (2 * self.fps) * 0.5
         else:
             fixed_bias_s = 0.0
         # Pre-compute curvature (second derivative) of diff for adaptive bias
