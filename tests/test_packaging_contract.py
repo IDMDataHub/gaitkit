@@ -10,6 +10,13 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 class TestPackagingContract(unittest.TestCase):
+    def test_python_version_is_consistent_across_metadata(self):
+        pyproject = (PROJECT_ROOT / "python" / "pyproject.toml").read_text(encoding="utf-8")
+        init_py = (PROJECT_ROOT / "python" / "src" / "gaitkit" / "__init__.py").read_text(encoding="utf-8")
+
+        self.assertIn('version = "1.4.9"', pyproject)
+        self.assertIn('__version__ = "1.4.9"', init_py)
+
     def test_h5_not_in_python_package_payload(self):
         pyproject = (PROJECT_ROOT / "python" / "pyproject.toml").read_text(encoding="utf-8")
         manifest = (PROJECT_ROOT / "python" / "MANIFEST.in").read_text(encoding="utf-8")

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.9 (2026-03-20)
+
+### Fixed
+- CLI now accepts proprietary MyoGait-like JSON payloads with `angles.frames`
+  and supports `myogait` as an export format, matching the documented API.
+- Release metadata and user-facing documentation are now version-consistent
+  across Python, R, citation metadata, and installation instructions.
+
 ## 1.4.7 (2026-03-16)
 
 ### Fixed

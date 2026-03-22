@@ -17,8 +17,8 @@ from gaitkit import cli
 
 class TestCliHelpers(unittest.TestCase):
     def test_parse_formats_deduplicates_and_preserves_order(self):
-        out = cli._parse_formats("json,csv,json,xlsx")
-        self.assertEqual(out, ["json", "csv", "xlsx"])
+        out = cli._parse_formats("json,csv,json,xlsx,myogait")
+        self.assertEqual(out, ["json", "csv", "xlsx", "myogait"])
 
     def test_parse_formats_rejects_unknown_values(self):
         with self.assertRaises(ValueError):
@@ -58,6 +58,25 @@ class TestCliHelpers(unittest.TestCase):
             cli._normalize_method("")
         with self.assertRaises(ValueError):
             cli._normalize_method(None)
+
+    def test_extract_detection_input_accepts_legacy_frames_payload(self):
+        payload = {"fps": 120.0, "frames": [{"frame_index": 0}]}
+        frames, fps = cli._extract_detection_input(payload)
+        self.assertEqual(frames, [{"frame_index": 0}])
+        self.assertEqual(fps, 120.0)
+
+    def test_extract_detection_input_accepts_myogait_payload(self):
+        payload = {
+            "meta": {"fps": 100.0},
+            "angles": {"frames": [{"frame_idx": 0, "hip_L": 1.0}]},
+        }
+        data, fps = cli._extract_detection_input(payload)
+        self.assertIs(data, payload)
+        self.assertEqual(fps, 100.0)
+
+    def test_extract_detection_input_rejects_missing_frames(self):
+        with self.assertRaises(ValueError):
+            cli._extract_detection_input({"meta": {"fps": 100.0}})
 
 
 if __name__ == "__main__":

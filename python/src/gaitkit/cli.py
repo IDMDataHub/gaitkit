@@ -8,6 +8,8 @@ Input JSON format:
   "units": {"position": "mm", "angles": "deg"},
   "frames": [...]
 }
+
+MyoGait-like payloads with ``angles.frames`` are also accepted.
 """
 
 from __future__ import annotations
@@ -47,7 +49,7 @@ def _parse_formats(value: str) -> Sequence[str]:
     parts = [p.strip().lower() for p in value.split(",") if p.strip()]
     if not parts:
         raise ValueError("--formats must not be empty")
-    allowed = {"json", "csv", "xlsx"}
+    allowed = {"json", "csv", "xlsx", "myogait"}
     unknown = [p for p in parts if p not in allowed]
     if unknown:
         raise ValueError(f"Unknown format(s): {unknown}. Allowed: {sorted(allowed)}")
@@ -82,6 +84,27 @@ def _normalize_method(method: Any) -> str:
     return value
 
 
+def _extract_detection_input(payload: Dict[str, Any]) -> tuple[Any, float]:
+    """Return the payload expected by ``detect_events_structured`` and an fps fallback."""
+    if not isinstance(payload, dict):
+        raise ValueError("Input JSON must be an object")
+
+    if isinstance(payload.get("frames"), list):
+        fps = float(payload.get("fps", 100.0))
+        if fps <= 0:
+            raise ValueError("fps must be strictly positive")
+        return payload["frames"], fps
+
+    if isinstance(payload.get("angles"), dict) and isinstance(payload["angles"].get("frames"), list):
+        meta = payload.get("meta", {})
+        fps = float(meta.get("fps", payload.get("fps", 100.0)) if isinstance(meta, dict) else payload.get("fps", 100.0))
+        if fps <= 0:
+            raise ValueError("fps must be strictly positive")
+        return payload, fps
+
+    raise ValueError("Input JSON must contain either 'frames' or 'angles.frames'")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run gaitkit on structured JSON frames.")
     parser.add_argument("--input", required=True, type=Path, help="Input JSON file path.")
@@ -99,18 +122,16 @@ def main() -> int:
         "--formats",
         type=str,
         default="json",
-        help="Comma-separated output formats: json,csv,xlsx",
+        help="Comma-separated output formats: json,csv,xlsx,myogait",
     )
     args = parser.parse_args()
 
     payload = _load_payload(args.input)
     method = _normalize_method(args.method if args.method is not None else payload.get("method", "bayesian_bis"))
-    fps = float(args.fps if args.fps is not None else payload.get("fps", 100.0))
+    detection_input, default_fps = _extract_detection_input(payload)
+    fps = float(args.fps if args.fps is not None else default_fps)
     if fps <= 0:
         raise ValueError("fps must be strictly positive")
-    frames = payload.get("frames", [])
-    if not isinstance(frames, list):
-        raise ValueError("'frames' must be a JSON array")
 
     units = _normalize_units(payload.get("units", None))
     if args.position_unit is not None:
@@ -127,14 +148,14 @@ def main() -> int:
     formats = _parse_formats(args.formats)
 
     if formats == ["json"]:
-        result = gaitkit.detect_events_structured(method, frames, fps, units=units)
+        result = gaitkit.detect_events_structured(method, detection_input, fps, units=units)
         _write_json(args.output, result)
         return 0
 
     if args.output is None:
         raise ValueError("--output is required for multi-format export")
 
-    result = gaitkit.detect_events_structured(method, frames, fps, units=units)
+    result = gaitkit.detect_events_structured(method, detection_input, fps, units=units)
     paths = gaitkit.export_detection(result, output_prefix=args.output, formats=formats)
     _write_json(None, {"written": paths})
     return 0

@@ -31,10 +31,12 @@ r/*.tar.gz
 # OS
 .DS_Store
 Thumbs.db
+*.Zone.Identifier
 
 # IDE
 .vscode/
 .idea/
+.claude/
 *.swp
 *.swo
 *~
