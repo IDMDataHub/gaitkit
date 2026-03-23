@@ -32,6 +32,7 @@ r/*.tar.gz
 .DS_Store
 Thumbs.db
 *.Zone.Identifier
+*:Zone.Identifier
 
 # IDE
 .vscode/
@@ -60,3 +61,10 @@ Thumbs.db
 htmlcov/
 .pytest_cache/
 .tox/
+
+# Local audit / validation scratch files
+myogait_output_*.json
+res_angles_t.mat
+trial_07 1.c3d
+scripts/test_*.py
+scripts/validate_video_labeling.py
