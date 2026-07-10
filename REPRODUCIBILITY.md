@@ -53,6 +53,29 @@ RETICULATE_PYTHON=/tmp/gaitkit-r-venv/bin/python \
 Rscript -e "testthat::test_dir('r/tests/testthat', reporter='summary')"
 ```
 
+## 4b. Third-party model assets and source archives (important)
+
+The IntellEvent ONNX models (`ic_intellevent.onnx`, `fo_intellevent.onnx`) and the
+DeepEvent weights (`DeepEventWeight.h5`) are tracked with **Git LFS**. The GitHub
+"Download ZIP" button and the automatically generated **source archives on Zenodo /
+GitHub Releases contain only the LFS pointer files, not the actual model binaries**.
+Reproducing the IntellEvent and DeepEvent comparators therefore requires the real
+assets, obtained by any of:
+
+```bash
+# Option A (recommended): install from PyPI, which ships the resolved binaries
+python -m pip install "gaitkit[onnx,deep]"
+
+# Option B: clone with Git LFS to materialise the assets in place
+git lfs install
+git clone https://github.com/IDMDataHub/gaitkit.git
+git -C gaitkit lfs pull
+```
+
+Model provenance and licensing are documented in `THIRD_PARTY_MODELS.md`
+(IntellEvent: CC BY 4.0; DeepEvent: see upstream licence). The BIKE detector and all
+other bundled methods do not depend on these external assets.
+
 ## 5. C3D external validation (recommended before release)
 
 - Run `load_c3d()` on representative real-world C3D files.
