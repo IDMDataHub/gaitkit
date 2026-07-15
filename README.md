@@ -201,7 +201,7 @@ gk_export_detection(events2, tempfile("gaitkit_out"), formats = c("json", "myoga
 | 5 | Mickelborough | Kinematic (velocity) | Mickelborough et al. (2000) |
 | 6 | Ghoussayni | Kinematic (velocity) | Ghoussayni et al. (2004) |
 | 7 | DGEI | Kinematic (energy index) | Desailly et al. (2009) |
-| 8 | Vancanneyt | Kinematic (wavelet) | Vancanneyt et al. (2022) |
+| 8 | Vancanneyt | Kinematic (velocity) | Vancanneyt et al. (2025) |
 | 9 | IntellEvent | Deep learning (BiLSTM) | Horsak & Kranzl (2023) |
 | 10 | DeepEvent | Deep learning (BiLSTM) | Lempereur et al. (2020) |
 
@@ -211,9 +211,9 @@ gk_export_detection(events2, tempfile("gaitkit_out"), formats = c("json", "myoga
 
 | Dataset | N | Population | Condition | Freq (Hz) |
 |---------|---|------------|-----------|-----------|
-| Fukuchi | 42 | Healthy | Treadmill + overground | 200 |
-| Schreiber | 50 | Healthy | 5 speeds | 100--250 |
-| Figshare PD | 26 | Parkinson | ON / OFF medication | 100 |
+| Fukuchi | 42 | Healthy | Treadmill + overground | 150 |
+| Schreiber | 50 | Healthy | 5 speeds | 100 |
+| Figshare PD | 26 | Parkinson | ON / OFF medication | 150 |
 | Van Criekinge | 188 | Healthy + Stroke | Lifespan + post-AVC | 100 |
 | Hood | 13 | Transfemoral amputee | Treadmill | 200 |
 
@@ -229,8 +229,8 @@ If you use gaitkit in your research, please cite the current software release:
   title   = {gaitkit},
   version = {1.4.9},
   year    = {2026},
-  doi     = {10.5281/zenodo.18653110},
-  url     = {https://doi.org/10.5281/zenodo.18653110}
+  doi     = {10.5281/zenodo.18653109},
+  url     = {https://doi.org/10.5281/zenodo.18653109}
 }
 ```
 
